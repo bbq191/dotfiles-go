@@ -1,0 +1,43 @@
+# WSL2 Performance Configuration for Intel Core Ultra 9 275HX + 64GB RAM + RTX 5080
+# 针对Web开发(Go/Java/Svelte) + AI推理(Ollama) + 数据库(MySQL/Redis)优化
+# 确保游戏时完全无性能损耗
+
+[wsl2]
+# === 内存配置 (48GB/64GB = 75%) ===
+memory=48GB                    # 分配48GB内存，保留16GB给Windows+游戏
+swap=16GB                      # 交换空间16GB，防OOM同时不影响性能
+swappiness=10                  # 低交换倾向，优先使用物理内存
+
+# === CPU配置 (20核/24核) ===  
+processors=20                  # 分配20核，保留4核给Windows系统
+#processor=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19  # 明确指定核心
+
+# === 网络配置 ===
+networkingMode=mirrored        # 镜像网络模式，最佳性能
+dnsTunneling=true             # DNS隧道优化
+firewall=false                # 开发环境关闭防火墙
+autoProxy=false               # 关闭自动代理
+
+# === 文件系统和I/O优化 ===
+kernelCommandLine=noatime,nodiratime,nobarrier,norelatime,data=writeback,commit=600,delalloc
+
+# === 内核参数优化 ===
+[experimental]
+# 启用实验性功能获得最佳性能
+sparseVhd=true                # 稀疏VHD，动态磁盘分配
+autoMemoryReclaim=gradual     # 渐进式内存回收
+generateResolvConf=false      # 禁用自动DNS配置生成
+generateHosts=false           # 禁用自动hosts生成
+
+# === GPU加速支持 ===
+# WSLg GPU加速，支持Ollama CUDA
+guiApplications=true          # 启用GUI应用支持
+
+# === 开发优化配置 ===
+[interop]
+enabled=true                  # 启用Windows互操作
+appendWindowsPath=false       # 不追加Windows PATH，避免污染
+
+[boot]
+# 启动时执行的命令，优化系统配置
+command="echo 'madvise' > /sys/kernel/mm/transparent_hugepage/enabled && echo '1' > /proc/sys/vm/swappiness && echo '100' > /proc/sys/vm/dirty_expire_centisecs"

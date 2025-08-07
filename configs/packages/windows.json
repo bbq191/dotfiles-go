@@ -1,0 +1,100 @@
+{
+  "categories": {
+    "essential": {
+      "description": "Essential development tools (Windows)",
+      "priority": 1,
+      "packages": {
+        "git": {
+          "description": "Fast, scalable, distributed revision control system",
+          "tags": ["vcs", "git", "essential"],
+          "managers": {
+            "winget": "Git.Git"
+          }
+        },
+        "powershell": {
+          "description": "PowerShell Core",
+          "tags": ["shell", "powershell"],
+          "managers": {
+            "winget": "Microsoft.PowerShell"
+          }
+        },
+        "vscode": {
+          "description": "Visual Studio Code",
+          "tags": ["editor", "development"],
+          "managers": {
+            "winget": "Microsoft.VisualStudioCode"
+          },
+          "optional": true
+        }
+      }
+    },
+    "modern_tools": {
+      "description": "Modern replacements and enhancements",
+      "priority": 2,
+      "packages": {
+        "windows-terminal": {
+          "description": "Modern terminal application for Windows",
+          "tags": ["terminal", "modern"],
+          "managers": {
+            "winget": "Microsoft.WindowsTerminal"
+          }
+        },
+        "fzf": {
+          "description": "Command-line fuzzy finder",
+          "tags": ["fuzzy", "finder", "modern"],
+          "managers": {
+            "winget": "junegunn.fzf"
+          },
+          "optional": true
+        }
+      }
+    },
+    "development": {
+      "description": "Development tools and runtimes",
+      "priority": 3,
+      "packages": {
+        "nodejs": {
+          "description": "JavaScript runtime built on Chrome's V8 JavaScript engine",
+          "tags": ["javascript", "nodejs", "development"],
+          "managers": {
+            "winget": "OpenJS.NodeJS"
+          }
+        },
+        "python": {
+          "description": "Python programming language",
+          "tags": ["python", "development"],
+          "managers": {
+            "winget": "Python.Python.3.11"
+          }
+        },
+        "go": {
+          "description": "Go programming language",
+          "tags": ["go", "golang", "development"],
+          "managers": {
+            "winget": "GoLang.Go"
+          }
+        }
+      }
+    }
+  },
+  "package_managers": {
+    "winget": {
+      "command": "winget",
+      "install_args": ["install", "--silent", "--accept-package-agreements", "--accept-source-agreements"],
+      "priority": 1,
+      "parallel": false
+    },
+    "choco": {
+      "command": "choco",
+      "install_args": ["install", "-y"],
+      "priority": 2,
+      "parallel": false
+    },
+    "scoop": {
+      "command": "scoop",
+      "install_args": ["install"],
+      "priority": 3,
+      "parallel": false
+    }
+  }
+}

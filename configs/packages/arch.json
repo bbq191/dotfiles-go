@@ -1,0 +1,538 @@
+{
+  "categories": {
+    "essential": {
+      "description": "Essential development tools",
+      "priority": 1,
+      "packages": {
+        "neovim": {
+          "description": "Hyperextensible Vim-based text editor",
+          "tags": ["editor", "vim", "essential"],
+          "managers": {
+            "pacman": "neovim",
+            "yay": "neovim"
+          }
+        },
+        "git": {
+          "description": "Fast, scalable, distributed revision control system",
+          "tags": ["vcs", "git", "essential"],
+          "managers": {
+            "pacman": "git",
+            "yay": "git"
+          }
+        },
+        "curl": {
+          "description": "Command line tool and library for transferring data",
+          "tags": ["network", "essential"],
+          "managers": {
+            "pacman": "curl",
+            "yay": "curl"
+          }
+        },
+        "wget": {
+          "description": "Network utility to retrieve files from the Web",
+          "tags": ["network", "essential"],
+          "managers": {
+            "pacman": "wget",
+            "yay": "wget"
+          }
+        },
+        "unzip": {
+          "description": "For extracting and viewing files in .zip archives",
+          "tags": ["compression", "essential"],
+          "managers": {
+            "pacman": "unzip",
+            "yay": "unzip"
+          }
+        },
+        "tar": {
+          "description": "Utility used to store, backup, and transport files",
+          "tags": ["compression", "essential"],
+          "managers": {
+            "pacman": "tar",
+            "yay": "tar"
+          }
+        },
+        "gzip": {
+          "description": "GNU compression utility",
+          "tags": ["compression", "essential"],
+          "managers": {
+            "pacman": "gzip",
+            "yay": "gzip"
+          }
+        }
+      }
+    },
+    "modern_tools": {
+      "description": "Modern replacements for traditional Unix tools",
+      "priority": 2,
+      "packages": {
+        "eza": {
+          "description": "Modern replacement for ls",
+          "tags": ["ls", "modern", "rust"],
+          "managers": {
+            "pacman": "eza",
+            "yay": "eza"
+          },
+          "post_install": [
+            "alias ls='eza'",
+            "alias ll='eza -l'",
+            "alias la='eza -la'"
+          ]
+        },
+        "bat": {
+          "description": "Cat clone with syntax highlighting and Git integration",
+          "tags": ["cat", "modern", "rust"],
+          "managers": {
+            "pacman": "bat",
+            "yay": "bat"
+          },
+          "post_install": ["alias cat='bat'"]
+        },
+        "fzf": {
+          "description": "Command-line fuzzy finder",
+          "tags": ["fuzzy", "finder", "modern"],
+          "managers": {
+            "pacman": "fzf",
+            "yay": "fzf"
+          }
+        },
+        "ripgrep": {
+          "description": "Line-oriented search tool that recursively searches directories",
+          "tags": ["grep", "modern", "rust"],
+          "managers": {
+            "pacman": "ripgrep",
+            "yay": "ripgrep"
+          },
+          "post_install": ["alias grep='rg'"]
+        },
+        "fd": {
+          "description": "Simple, fast and user-friendly alternative to find",
+          "tags": ["find", "modern", "rust"],
+          "managers": {
+            "pacman": "fd",
+            "yay": "fd"
+          },
+          "post_install": ["alias find='fd'"]
+        },
+        "lsd": {
+          "description": "LSDeluxe, the next gen ls command",
+          "tags": ["ls", "modern", "rust"],
+          "managers": {
+            "yay": "lsd"
+          },
+          "optional": true
+        },
+        "delta": {
+          "description": "Syntax-highlighting pager for git and diff output",
+          "tags": ["git", "diff", "modern", "rust"],
+          "managers": {
+            "pacman": "git-delta",
+            "yay": "git-delta"
+          },
+          "post_install": ["git config --global core.pager delta"]
+        },
+        "dust": {
+          "description": "More intuitive version of du in rust",
+          "tags": ["du", "modern", "rust"],
+          "managers": {
+            "pacman": "dust",
+            "yay": "dust"
+          }
+        },
+        "duf": {
+          "description": "Disk Usage/Free Utility - a better 'df' alternative",
+          "tags": ["df", "modern", "go"],
+          "managers": {
+            "yay": "duf"
+          }
+        },
+        "procs": {
+          "description": "Modern replacement for ps written in Rust",
+          "tags": ["ps", "modern", "rust"],
+          "managers": {
+            "pacman": "procs",
+            "yay": "procs"
+          }
+        },
+        "btop": {
+          "description": "Resource monitor that shows usage and stats",
+          "tags": ["top", "htop", "modern", "cpp"],
+          "managers": {
+            "pacman": "btop",
+            "yay": "btop"
+          }
+        },
+        "zoxide": {
+          "description": "Smarter cd command, inspired by z and autojump",
+          "tags": ["cd", "modern", "rust"],
+          "managers": {
+            "pacman": "zoxide",
+            "yay": "zoxide"
+          }
+        }
+      }
+    },
+    "web_development": {
+      "description": "Web development backend stack (Go + Java)",
+      "priority": 3,
+      "packages": {
+        "go": {
+          "description": "Go programming language with performance optimizations",
+          "tags": ["go", "backend", "web"],
+          "managers": {
+            "pacman": "go",
+            "yay": "go"
+          },
+          "post_install": [
+            "go env -w GOCACHE=$XDG_CACHE_HOME/go-build",
+            "go env -w GOMODCACHE=$XDG_CACHE_HOME/go/mod",
+            "go env -w GOMAXPROCS=20",
+            "go install golang.org/x/tools/gopls@latest",
+            "go install github.com/air-verse/air@latest"
+          ]
+        },
+        "jdk-openjdk": {
+          "description": "OpenJDK Java Development Kit",
+          "tags": ["java", "jdk", "backend"],
+          "managers": {
+            "pacman": "jdk-openjdk",
+            "yay": "jdk-openjdk"
+          }
+        },
+        "maven": {
+          "description": "Java project management and comprehension tool",
+          "tags": ["java", "build", "maven"],
+          "managers": {
+            "pacman": "maven",
+            "yay": "maven"
+          }
+        },
+        "gradle": {
+          "description": "Gradle build automation tool",
+          "tags": ["java", "build", "gradle"],
+          "managers": {
+            "yay": "gradle"
+          }
+        },
+        "rust": {
+          "description": "Systems programming language focused on safety, speed and concurrency",
+          "tags": ["rust", "development"],
+          "managers": {
+            "yay": "rustup"
+          },
+          "post_install": ["rustup default stable"]
+        }
+      }
+    },
+    "frontend_development": {
+      "description": "Frontend development stack (Svelte + Tailwind + DaisyUI)",
+      "priority": 4,
+      "packages": {
+        "nodejs-lts": {
+          "description": "Node.js LTS for frontend development",
+          "tags": ["nodejs", "javascript", "frontend"],
+          "managers": {
+            "pacman": "nodejs-lts",
+            "yay": "nodejs-lts"
+          }
+        },
+        "npm": {
+          "description": "Node Package Manager",
+          "tags": ["npm", "javascript", "package-manager"],
+          "managers": {
+            "pacman": "npm",
+            "yay": "npm"
+          }
+        },
+        "pnpm": {
+          "description": "Fast, disk space efficient package manager",
+          "tags": ["pnpm", "javascript", "package-manager"],
+          "managers": {
+            "yay": "pnpm"
+          }
+        },
+        "yarn": {
+          "description": "Fast, reliable, and secure dependency management",
+          "tags": ["yarn", "javascript", "package-manager"],
+          "managers": {
+            "pacman": "yarn",
+            "yay": "yarn"
+          }
+        }
+      }
+    },
+    "databases": {
+      "description": "Database systems (MySQL + Redis)",
+      "priority": 5,
+      "packages": {
+        "mysql": {
+          "description": "MySQL database server optimized for development",
+          "tags": ["mysql", "database", "sql"],
+          "managers": {
+            "pacman": "mysql",
+            "yay": "mysql"
+          },
+          "post_install": [
+            "sudo mysql_install_db --user=mysql --basedir=/usr --datadir=/var/lib/mysql",
+            "sudo systemctl enable mysqld"
+          ]
+        },
+        "redis": {
+          "description": "In-memory data structure store",
+          "tags": ["redis", "cache", "database"],
+          "managers": {
+            "pacman": "redis",
+            "yay": "redis"
+          },
+          "post_install": [
+            "sudo systemctl enable redis"
+          ]
+        },
+        "mariadb-clients": {
+          "description": "MySQL client tools",
+          "tags": ["mysql", "client", "tools"],
+          "managers": {
+            "pacman": "mariadb-clients",
+            "yay": "mariadb-clients"
+          }
+        }
+      }
+    },
+    "ai_development": {
+      "description": "AI development tools (Ollama + CUDA)",
+      "priority": 6,
+      "packages": {
+        "python": {
+          "description": "Python programming language for AI development",
+          "tags": ["python", "ai", "development"],
+          "managers": {
+            "pacman": "python",
+            "yay": "python"
+          }
+        },
+        "python-pip": {
+          "description": "Python package installer",
+          "tags": ["python", "pip", "package-manager"],
+          "managers": {
+            "pacman": "python-pip",
+            "yay": "python-pip"
+          }
+        },
+        "ollama": {
+          "description": "Run large language models locally",
+          "tags": ["ollama", "ai", "llm"],
+          "managers": {
+            "yay": "ollama"
+          },
+          "post_install": [
+            "sudo systemctl enable ollama",
+            "sudo usermod -aG docker $USER"
+          ]
+        },
+        "nvidia-utils": {
+          "description": "NVIDIA driver utilities for GPU acceleration",
+          "tags": ["nvidia", "gpu", "cuda"],
+          "managers": {
+            "pacman": "nvidia-utils",
+            "yay": "nvidia-utils"
+          }
+        },
+        "cuda": {
+          "description": "NVIDIA CUDA toolkit for GPU computing",
+          "tags": ["cuda", "gpu", "nvidia"],
+          "managers": {
+            "yay": "cuda"
+          }
+        }
+      }
+    },
+    "performance_tools": {
+      "description": "System performance monitoring and optimization",
+      "priority": 7,
+      "packages": {
+        "iotop": {
+          "description": "I/O monitoring tool",
+          "tags": ["monitoring", "io", "performance"],
+          "managers": {
+            "pacman": "iotop",
+            "yay": "iotop"
+          }
+        },
+        "sysstat": {
+          "description": "System performance tools (sar, iostat, mpstat)",
+          "tags": ["monitoring", "performance", "stats"],
+          "managers": {
+            "pacman": "sysstat",
+            "yay": "sysstat"
+          }
+        },
+        "perf": {
+          "description": "Linux performance profiling tools",
+          "tags": ["profiling", "performance", "perf"],
+          "managers": {
+            "pacman": "perf",
+            "yay": "perf"
+          }
+        },
+        "bandwhich": {
+          "description": "Network utilization monitoring",
+          "tags": ["network", "monitoring", "rust"],
+          "managers": {
+            "yay": "bandwhich"
+          }
+        }
+      }
+    },
+    "shell_enhancement": {
+      "description": "Shell and terminal enhancements",
+      "priority": 8,
+      "packages": {
+        "zsh": {
+          "description": "Very advanced and programmable command interpreter (shell)",
+          "tags": ["shell", "zsh"],
+          "managers": {
+            "pacman": "zsh",
+            "yay": "zsh"
+          },
+          "post_install": ["chsh -s /usr/bin/zsh"]
+        },
+        "tmux": {
+          "description": "Terminal multiplexer",
+          "tags": ["terminal", "multiplexer"],
+          "managers": {
+            "pacman": "tmux",
+            "yay": "tmux"
+          }
+        },
+        "lazygit": {
+          "description": "Simple terminal UI for git commands",
+          "tags": ["git", "tui", "go"],
+          "managers": {
+            "yay": "lazygit"
+          }
+        },
+        "gh": {
+          "description": "GitHub CLI tool",
+          "tags": ["git", "github", "cli"],
+          "managers": {
+            "pacman": "github-cli",
+            "yay": "github-cli"
+          }
+        },
+        "thefuck": {
+          "description": "Magnificent app which corrects your previous console command",
+          "tags": ["shell", "correction", "python"],
+          "managers": {
+            "yay": "thefuck"
+          }
+        },
+        "atuin": {
+          "description": "Magical shell history",
+          "tags": ["shell", "history", "rust"],
+          "managers": {
+            "yay": "atuin"
+          }
+        }
+      }
+    },
+    "system_utilities": {
+      "description": "System utilities and additional tools",
+      "priority": 9,
+      "packages": {
+        "lsof": {
+          "description": "Lists open files and network connections",
+          "tags": ["system", "network", "debugging"],
+          "managers": {
+            "pacman": "lsof",
+            "yay": "lsof"
+          }
+        },
+        "net-tools": {
+          "description": "Configuration tools for Linux networking (netstat)",
+          "tags": ["system", "network"],
+          "managers": {
+            "pacman": "net-tools",
+            "yay": "net-tools"
+          }
+        },
+        "p7zip": {
+          "description": "Command-line file archiver with high compression ratio (7z)",
+          "tags": ["compression"],
+          "managers": {
+            "pacman": "p7zip",
+            "yay": "p7zip"
+          }
+        },
+        "unrar": {
+          "description": "The unrar tool for extracting files from RAR archives",
+          "tags": ["compression"],
+          "managers": {
+            "yay": "unrar"
+          }
+        },
+        "bzip2": {
+          "description": "High-quality data compression program",
+          "tags": ["compression"],
+          "managers": {
+            "pacman": "bzip2",
+            "yay": "bzip2"
+          }
+        },
+        "xz": {
+          "description": "Library and command line tools for XZ and LZMA compressed files",
+          "tags": ["compression"],
+          "managers": {
+            "pacman": "xz",
+            "yay": "xz"
+          }
+        },
+        "htop": {
+          "description": "Interactive process viewer",
+          "tags": ["system", "monitoring"],
+          "managers": {
+            "pacman": "htop",
+            "yay": "htop"
+          }
+        }
+      }
+    },
+    "multimedia": {
+      "description": "Multimedia tools and codecs",
+      "priority": 10,
+      "packages": {
+        "ffmpeg": {
+          "description": "Complete solution to record, convert and stream audio and video",
+          "tags": ["multimedia", "video", "audio"],
+          "managers": {
+            "pacman": "ffmpeg",
+            "yay": "ffmpeg"
+          },
+          "optional": true
+        },
+        "imagemagick": {
+          "description": "Image manipulation library",
+          "tags": ["image", "graphics"],
+          "managers": {
+            "pacman": "imagemagick",
+            "yay": "imagemagick"
+          },
+          "optional": true
+        }
+      }
+    }
+  },
+  "package_managers": {
+    "yay": {
+      "command": "yay",
+      "install_args": ["-S", "--noconfirm", "--needed"],
+      "priority": 0,
+      "parallel": false
+    },
+    "pacman": {
+      "command": "sudo pacman",
+      "install_args": ["-S", "--noconfirm"],
+      "priority": 1,
+      "parallel": false
+    }
+  }
+}

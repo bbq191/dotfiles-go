@@ -1,0 +1,974 @@
+#!/usr/bin/env zsh
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    🚀 dotfiles-go ZSH 配置文件 🚀                            ║
+# ╠══════════════════════════════════════════════════════════════════════════════╣
+# ║ 平台: {{.Platform.OS}}/{{.Platform.Architecture}}{{if .Platform.WSL}} (WSL2: {{.Platform.WSL.Distribution}}){{end}}                                    ║
+# ║ 生成时间: {{now | date "2006-01-02 15:04:05"}}                                                   ║
+# ║ 生成工具: dotfiles-go                                                        ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+{{if .ZshConfig.XDGDirectories.Enabled}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                       📁 XDG 基础目录规范配置                                  │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🗂️ XDG 标准目录结构
+export XDG_CONFIG_HOME={{xdgPath "config" .}}  # 🔧 配置文件目录
+export XDG_DATA_HOME={{xdgPath "data" .}}      # 📊 数据文件目录
+export XDG_CACHE_HOME={{xdgPath "cache" .}}    # 💾 缓存文件目录
+export XDG_STATE_HOME={{xdgPath "state" .}}    # 📝 状态文件目录
+
+# 🏠 ZSH 专用目录
+export ZDOTDIR="$XDG_CONFIG_HOME/zsh"          # 🐚 Zsh 配置目录
+export HISTFILE="$XDG_STATE_HOME/zsh/history"  # 📚 Zsh 历史文件
+
+# 📁 确保目录存在
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
+mkdir -p "$ZDOTDIR" "$XDG_STATE_HOME/zsh"
+
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                       🛠️ 应用程序 XDG 适配配置                                  │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🔗 Git 配置
+export GIT_CONFIG_GLOBAL="$XDG_CONFIG_HOME/git/config"  # Git 全局配置
+mkdir -p "$XDG_CONFIG_HOME/git"
+
+# 🟢 Node.js & NPM 配置
+if [[ -z "$NVM_DIR" && ! -d "$HOME/.nvm" && ! $(command -v fnm) && ! $(command -v volta) ]]; then
+    export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm/npmrc"
+    export NODE_REPL_HISTORY="$XDG_DATA_HOME/node_repl_history"
+    mkdir -p "$XDG_CONFIG_HOME/npm" "$XDG_DATA_HOME"
+else
+    export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm/npmrc"
+    mkdir -p "$XDG_CONFIG_HOME/npm"
+fi
+
+# 🐍 Python 配置
+if [[ -z "$CONDA_DEFAULT_ENV" && -z "$VIRTUAL_ENV" && -z "$PYENV_ROOT" && ! $(command -v poetry) ]]; then
+    export PYTHONSTARTUP="$XDG_CONFIG_HOME/python/pythonrc"
+    mkdir -p "$XDG_CONFIG_HOME/python"
+fi
+
+export PYLINTHOME="$XDG_CACHE_HOME/pylint"       # 🔍 Pylint 缓存
+export JUPYTER_CONFIG_DIR="$XDG_CONFIG_HOME/jupyter"  # 📓 Jupyter 配置
+mkdir -p "$XDG_CACHE_HOME/pylint" "$XDG_CONFIG_HOME/jupyter"
+
+# 🐹 Go 配置
+if [[ ! $(command -v g) && -z "$GVM_ROOT" && -z "$GOPATH" ]]; then
+    export GOPATH="$XDG_DATA_HOME/go"  # Go 工作空间
+    mkdir -p "$GOPATH"
+fi
+
+export GOCACHE="$XDG_CACHE_HOME/go-build"  # 🏗️ Go 编译缓存
+mkdir -p "$GOCACHE"
+
+# 🐳 Docker 配置
+export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"        # Docker 配置
+mkdir -p "$DOCKER_CONFIG"
+
+# ✏️ Vim/Neovim 配置
+export VIMINIT='let $MYVIMRC = !has("nvim") ? "$XDG_CONFIG_HOME/vim/vimrc" : "$XDG_CONFIG_HOME/nvim/init.vim" | so $MYVIMRC'
+mkdir -p "$XDG_CONFIG_HOME/vim" "$XDG_CONFIG_HOME/nvim"
+mkdir -p "$XDG_DATA_HOME/vim" "$XDG_DATA_HOME/nvim"
+mkdir -p "$XDG_CACHE_HOME/vim" "$XDG_CACHE_HOME/nvim"
+mkdir -p "$XDG_STATE_HOME/vim" "$XDG_STATE_HOME/nvim"
+
+# 📖 其他工具配置
+export LESSHISTFILE="$XDG_STATE_HOME/less/history"     # Less 历史
+export WGETRC="$XDG_CONFIG_HOME/wget/wgetrc"           # Wget 配置
+export GNUPGHOME="$XDG_DATA_HOME/gnupg"               # 🔐 GnuPG 目录
+
+# 📁 创建配置目录
+mkdir -p "$XDG_STATE_HOME/less" "$XDG_CONFIG_HOME/wget"
+mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"
+
+{{end}}
+
+{{if .ZshConfig.Proxy.Enabled}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                           🌐 网络代理配置                                      │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+{{$activeProxy := getActiveProxy}}
+{{if $activeProxy}}
+{{if index $activeProxy "https_proxy"}}{{$httpsProxy := expandEnv (index $activeProxy "https_proxy")}}{{if $httpsProxy}}
+export HTTPS_PROXY="{{$httpsProxy}}"  # 🔒 HTTPS 代理
+{{end}}{{end}}{{if index $activeProxy "http_proxy"}}{{$httpProxy := expandEnv (index $activeProxy "http_proxy")}}{{if $httpProxy}}
+export HTTP_PROXY="{{$httpProxy}}"    # 🌍 HTTP 代理
+{{end}}{{end}}{{if index $activeProxy "all_proxy"}}{{$allProxy := expandEnv (index $activeProxy "all_proxy")}}{{if $allProxy}}
+export ALL_PROXY="{{$allProxy}}"      # 🧦 SOCKS 代理
+{{end}}{{end}}{{if index $activeProxy "no_proxy"}}{{$noProxy := expandEnv (index $activeProxy "no_proxy")}}{{if $noProxy}}
+export NO_PROXY="{{$noProxy}}"        # ❌ 代理例外列表
+{{end}}{{end}}
+{{end}}
+
+# 🔧 代理管理函数
+proxy_on() {  # 启用代理: proxy_on [profile]
+    local profile=${1:-"default"}
+    echo "📋 可用的代理配置:"
+    {{range $name, $profile := .ZshConfig.Proxy.Profiles}}
+    {{if ne $name "none"}}
+    echo "  📡 {{$name}}"
+    {{end}}
+    {{end}}
+
+    if [[ -n "$1" ]]; then
+        export PROXY_PROFILE="$1"
+        echo "✅ 已切换到代理配置: $1"
+        echo "🔄 请重新加载 shell 或执行 'source ~/.zshrc' 使配置生效"
+    fi
+}
+
+proxy_off() {  # 禁用代理
+    unset https_proxy HTTPS_PROXY http_proxy HTTP_PROXY all_proxy ALL_PROXY no_proxy NO_PROXY
+    echo "🚫 代理已禁用"
+}
+{{end}}
+
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                         ⚙️ 核心环境变量配置                                    │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🛠️ 默认工具配置
+{{if .User.Editor}}
+export EDITOR="{{.User.Editor}}"     # ✏️ 默认编辑器
+{{else}}
+export EDITOR="nvim"                  # ✏️ 默认编辑器
+{{end}}
+
+{{if .User.Browser}}
+export BROWSER="{{.User.Browser}}"   # 🌐 默认浏览器
+{{else}}
+export BROWSER="firefox"              # 🌐 默认浏览器
+{{end}}
+
+export PAGER="less -R"               # 📄 分页器
+export MANPAGER="less -R"            # 📚 手册分页器
+
+# 🎨 终端环境配置
+export TERM="xterm-256color"     # 🖥️ 终端类型
+export COLORTERM="truecolor"     # 🌈 真彩色支持
+export LESS="-R"                 # 🎨 Less 颜色支持
+
+{{if .Environment}}
+# 🔧 用户自定义环境变量
+{{range $key, $value := .Environment}}
+{{if and (ne $key "EDITOR") (ne $key "BROWSER")}}
+{{$envValue := expandEnv $value}}
+{{if $envValue}}
+export {{$key}}="{{$envValue}}"  # 🎛️ {{$key}} 配置
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{if .Platform.WSL}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                          🪟 WSL 特定配置                                       │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🖥️ X11 显示配置
+export DISPLAY="$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0"
+export LIBGL_ALWAYS_INDIRECT=1  # 🎮 OpenGL 间接渲染
+
+{{if .Platform.WSL.WindowsHome}}
+# 🏠 Windows 目录快捷方式
+export WINDOWS_HOME="{{.Platform.WSL.WindowsHome}}"  # Windows 用户目录
+export WINHOME="{{.Platform.WSL.WindowsHome}}"       # Windows 用户目录缩写
+export DESKTOP="{{.Platform.WSL.WindowsHome}}/Desktop"    # 🖥️ Windows 桌面
+export DOWNLOADS="{{.Platform.WSL.WindowsHome}}/Downloads"  # 📥 Windows 下载
+export DOCUMENTS="{{.Platform.WSL.WindowsHome}}/Documents"  # 📄 Windows 文档
+{{end}}
+{{end}}
+
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                          📂 系统路径配置                                       │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🛣️ 用户路径配置
+{{if .ZshConfig.XDGDirectories.Enabled}}
+export PATH="$XDG_DATA_HOME/bin:$HOME/.local/bin:$PATH"  # 🔧 用户本地二进制目录
+{{else}}
+export PATH="$HOME/.local/bin:$PATH"  # 🔧 用户本地二进制目录
+{{end}}
+
+# 📁 项目目录配置
+{{if .Paths.Projects}}
+{{$projectsPath := getPlatformValue .Paths.Projects}}
+{{if $projectsPath}}
+export PROJECTS_DIR="{{expandEnv $projectsPath}}"  # 🚀 项目目录
+{{end}}
+{{else if .Platform.WSL}}
+{{if .Platform.WSL.WindowsHome}}
+export PROJECTS_DIR="{{.Platform.WSL.WindowsHome}}/Projects"  # 🚀 WSL 项目目录
+{{end}}
+{{else}}
+export PROJECTS_DIR="$HOME/Projects"  # 🚀 默认项目目录
+{{end}}
+
+{{if .ZshConfig.Performance}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                       ⚡ 高性能开发环境配置                                     │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🐹 Go 开发环境优化
+export GOMAXPROCS=20                            # 🚀 多核CPU利用
+export GOCACHE="$XDG_CACHE_HOME/go-build"       # 💾 编译缓存
+export GOMODCACHE="$XDG_CACHE_HOME/go/mod"      # 📦 模块缓存
+{{if not .ZshConfig.VersionManagers.g.Enabled}}
+export GOPATH="${GOPATH:-$XDG_DATA_HOME/go}"    # 🏠 Go工作空间
+{{end}}
+export GOPROXY="https://goproxy.cn,direct"     # 🚀 Go代理加速
+export CGO_ENABLED=1                            # 🔧 启用CGO
+
+# ☕ Java 开发环境优化
+export _JAVA_OPTIONS="-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xms8g -Xmx32g -XX:+UseStringDeduplication"  # 🚀 Java JVM优化
+export MAVEN_OPTS="-Xms4g -Xmx16g -XX:+TieredCompilation -XX:TieredStopAtLevel=1"  # ⚡ Maven优化
+export GRADLE_OPTS="-Xms4g -Xmx16g -Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=20"  # 🐘 Gradle优化
+
+# 🟢 Node.js 环境优化
+export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=256"  # 🧠 Node.js内存优化
+export UV_THREADPOOL_SIZE=20  # 🧵 Node.js线程池
+
+# 🐍 Python AI 开发环境优化
+{{if not .ZshConfig.VersionManagers.pyenv.Enabled}}
+export PYTHONPATH="$XDG_DATA_HOME/python"        # 📚 Python路径
+export PYTHON_HISTORY="$XDG_STATE_HOME/python/history"  # 📜 Python历史
+{{end}}
+export PIPENV_VENV_IN_PROJECT=1  # 📁 Pipenv虚拟环境
+export PIPX_HOME="$XDG_DATA_HOME/pipx"           # 📦 Pipx目录
+export PIPX_BIN_DIR="$XDG_DATA_HOME/pipx/bin"    # 🔧 Pipx二进制
+
+# 🦀 Rust 环境优化
+export CARGO_HOME="$XDG_DATA_HOME/cargo"         # 📦 Cargo目录
+export RUSTUP_HOME="$XDG_DATA_HOME/rustup"       # 🦀 Rustup目录
+export CARGO_BUILD_JOBS=20                       # 🚀 并行编译
+export CARGO_TARGET_DIR="$XDG_CACHE_HOME/cargo-target"  # 💾 Cargo缓存
+
+# 🤖 AI 开发配置 (Ollama)
+export OLLAMA_HOST="127.0.0.1:11434"             # 🏠 Ollama服务器
+export OLLAMA_MODELS="$XDG_DATA_HOME/ollama/models"  # 🧠 Ollama模型目录
+export OLLAMA_NUM_PARALLEL=4                     # 🔄 并行请求数
+export OLLAMA_MAX_LOADED_MODELS=3                # 📊 最大加载模型
+export OLLAMA_GPU_MEMORY_FRACTION=0.9            # 🎮 GPU内存分配
+export CUDA_VISIBLE_DEVICES=0                    # 🎮 CUDA设备
+
+# 🗄️ 数据库性能配置
+export MARIADB_HISTFILE="$XDG_STATE_HOME/mariadb/history"  # 📊 MariaDB历史
+export VALKEY_CONF="$XDG_CONFIG_HOME/valkey/valkey.conf"   # ⚡ Valkey配置
+
+# ⚡ 编译器性能优化
+export MAKEFLAGS="-j20"      # 🔨 Make并行编译
+export CC="gcc"              # 🔧 C编译器
+export CXX="g++"             # 🔧 C++编译器
+export CFLAGS="-march=native -mtune=native -O3 -pipe"  # 🚀 C编译选项
+export CXXFLAGS="$CFLAGS"    # 🚀 C++编译选项
+{{end}}
+
+{{if .ZshConfig.VersionManagers}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        🔄 版本管理器配置                                        │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🛠️ 版本管理器环境变量
+{{range $name, $vm := .ZshConfig.VersionManagers}}
+{{if $vm.Enabled}}
+# {{$name | title}} 环境变量
+{{if $vm.EnvVars}}{{range $key, $value := $vm.EnvVars}}
+export {{$key}}="{{getPlatformValue $value}}"  # 🔧 {{$name}} {{$key}}
+{{end}}{{end}}
+{{end}}
+{{end}}
+
+# 🛣️ 版本管理器 PATH 配置
+{{$pathAdditions := list}}{{range $name, $vm := .ZshConfig.VersionManagers}}{{if $vm.Enabled}}{{if $vm.PathAdditions}}{{range $path := $vm.PathAdditions}}{{$pathAdditions = append $pathAdditions $path}}{{end}}{{end}}{{end}}{{end}}{{if $pathAdditions}}
+export PATH="{{join ":" $pathAdditions}}:$PATH"  # 🔧 版本管理器 PATH
+{{end}}
+
+# 🚀 版本管理器初始化
+if [[ -f "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then  # ☕ Sdkman
+    source "$SDKMAN_DIR/bin/sdkman-init.sh"
+fi
+
+{{range $name, $vm := .ZshConfig.VersionManagers}}
+{{if $vm.Enabled}}
+{{if $vm.InitCommand}}
+if command -v {{$name}} >/dev/null 2>&1; then  # 🔧 {{$name | title}}
+    {{$vm.InitCommand | replace "{shell}" "zsh"}}
+fi
+{{else if eq $name "fnm"}}
+if command -v fnm >/dev/null 2>&1; then  # 🟢 FNM Node.js
+    eval "$(fnm env --use-on-cd --shell zsh)"
+fi
+{{else if eq $name "pyenv"}}
+if command -v pyenv >/dev/null 2>&1; then  # 🐍 Pyenv Python
+    eval "$(pyenv init - zsh)"
+fi
+{{else if eq $name "g"}}
+[ -s "${G_HOME}/env" ] && \. "${G_HOME}/env"  # 🐹 G Go版本管理
+{{end}}
+{{end}}
+{{end}}
+
+hash -r 2>/dev/null || true  # 🔄 清除命令缓存
+{{end}}
+
+{{if .ZshConfig.HistoryAdvanced}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                         📚 智能历史记录配置                                     │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 📊 历史记录基本配置
+HISTSIZE={{.ZshConfig.HistoryAdvanced.Size | default 50000}}    # 🧠 内存中历史数量
+SAVEHIST={{.ZshConfig.HistoryAdvanced.SaveSize | default 50000}}  # 💾 保存历史数量
+{{if .ZshConfig.XDGDirectories.Enabled}}
+HISTFILE="$XDG_STATE_HOME/zsh/history"  # 📁 历史文件路径
+{{else}}
+HISTFILE="$HOME/.zsh_history"           # 📁 历史文件路径
+{{end}}
+
+# ⚙️ 历史记录行为优化
+setopt EXTENDED_HISTORY       # 🕒 保存时间戳
+setopt HIST_EXPIRE_DUPS_FIRST # 🔄 优先清理重复
+setopt HIST_IGNORE_DUPS       # ❌ 忽略连续重复
+setopt HIST_IGNORE_ALL_DUPS   # ❌ 移除所有重复
+setopt HIST_FIND_NO_DUPS      # 🔍 搜索时不显示重复
+setopt HIST_IGNORE_SPACE      # ⚪ 忽略空格开头命令
+setopt HIST_SAVE_NO_DUPS      # 💾 不保存重复
+setopt HIST_VERIFY            # ✅ 执行前显示历史命令
+setopt INC_APPEND_HISTORY     # ⚡ 实时添加历史
+setopt SHARE_HISTORY          # 🔄 会话间共享历史
+
+{{if .ZshConfig.HistoryAdvanced.BackupDir}}
+# 💾 历史记录备份功能
+backup_history() {  # 备份历史记录
+    local backup_dir="{{expandEnv .ZshConfig.HistoryAdvanced.BackupDir}}"
+    mkdir -p "$backup_dir"
+    cp "$HISTFILE" "$backup_dir/zsh_history_$(date +%Y%m%d_%H%M%S)"
+    echo "✅ 历史记录已备份到 $backup_dir"
+}
+{{end}}
+{{end}}
+
+{{if .ZshConfig.ModernTools.Replacements}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        🔧 现代化工具集成                                        │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+{{range $old, $replacement := .ZshConfig.ModernTools.Replacements}}
+{{if $replacement.Tool}}
+
+if command -v {{$replacement.Tool}} >/dev/null 2>&1; then  # 🆕 {{$old}} → {{$replacement.Tool}}
+    {{if $replacement.Aliases}}
+    {{range $alias, $cmd := $replacement.Aliases}}
+    alias {{$alias}}="{{$cmd}}"  # 🔗 {{$alias}} 别名
+    {{end}}
+    {{end}}
+    {{if $replacement.InitCommand}}
+    {{$replacement.InitCommand | replace "{shell}" (shellName)}}  # 🚀 {{$replacement.Tool}} 初始化
+    {{end}}
+    {{if $replacement.EnvVars}}
+    {{range $key, $value := $replacement.EnvVars}}
+    export {{$key}}="{{$value}}"  # ⚙️ {{$replacement.Tool}} {{$key}}
+    {{end}}
+    {{end}}
+{{if $replacement.Fallback}}
+else
+    alias {{$old}}="{{$replacement.Fallback}}"  # ⬇️ 降级方案
+{{end}}
+fi
+{{end}}
+{{end}}
+{{end}}
+
+{{if .ZshConfig.FzfConfig.Enabled}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        🔍 FZF 模糊查找器配置                                    │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+{{if .ZshConfig.FzfConfig.Commands}}
+# 📊 FZF 数据源命令
+{{range $key, $cmd := .ZshConfig.FzfConfig.Commands}}
+export FZF_{{upper $key}}_COMMAND="{{$cmd}}"  # 🔧 {{upper $key}} 命令
+{{end}}
+{{end}}
+
+{{if .ZshConfig.FzfConfig.Theme}}
+# 🎨 FZF 主题配置
+{{if typeIs "string" .ZshConfig.FzfConfig.Theme}}
+export FZF_DEFAULT_OPTS="{{.ZshConfig.FzfConfig.Theme}}"  # 🎨 字符串主题
+{{else}}
+export FZF_DEFAULT_OPTS="{{formatFzfTheme .ZshConfig.FzfConfig.Theme}}"  # 🎨 结构化主题
+{{end}}
+{{end}}
+
+{{if .ZshConfig.FzfConfig.Preview}}
+# 👁️ FZF 预览功能
+{{range $key, $cmd := .ZshConfig.FzfConfig.Preview}}
+export FZF_{{upper $key}}_PREVIEW="{{$cmd}}"  # 👁️ {{upper $key}} 预览
+{{end}}
+{{end}}
+
+# 🎯 FZF Shell 集成
+if command -v fzf >/dev/null 2>&1; then
+    # ⌨️ 键绑定模块 (Ctrl+T, Ctrl+R, Alt+C)
+    [[ -f /usr/share/fzf/key-bindings.zsh ]] && source /usr/share/fzf/key-bindings.zsh
+    # 📝 补全增强模块 (** 触发、进程ID补全等)
+    [[ -f /usr/share/fzf/completion.zsh ]] && source /usr/share/fzf/completion.zsh
+fi
+{{end}}
+
+{{if .ZshConfig.CompletionAdvanced}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        🧠 ZSH 智能补全系统                                     │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+autoload -Uz compinit  # 🔧 加载补全系统
+
+# 🚀 补全系统初始化
+{{if .ZshConfig.XDGDirectories.Enabled}}
+if [[ $ZSH_DISABLE_COMPFIX != true ]]; then
+    compinit -d "$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"  # 🔒 安全模式
+else
+    compinit -u -d "$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"  # ⚡ 快速模式
+fi
+{{else}}
+compinit  # 🔧 传统模式
+{{end}}
+
+# ⚙️ 补全行为配置
+zstyle ':completion:*' menu select            # 📋 启用菜单选择
+zstyle ':completion:*' group-name ''          # 📂 自动分组
+zstyle ':completion:*:descriptions' format '%B%d%b'  # 📝 描述格式
+zstyle ':completion:*:messages' format '%d'   # 💬 消息格式
+zstyle ':completion:*:warnings' format '❌ 未找到匹配项'  # ⚠️ 警告格式
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}  # 🌈 颜色配置
+
+{{if .ZshConfig.CompletionAdvanced.CachePath}}
+# 💾 补全缓存配置
+zstyle ':completion::complete:*' use-cache 1
+zstyle ':completion::complete:*' cache-path "{{expandEnv .ZshConfig.CompletionAdvanced.CachePath}}"
+{{end}}
+
+# 💡 高级补全配置示例 (默认禁用)
+# zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'  # 智能匹配
+# zstyle ':completion:*:processes' command 'ps -u $USER -o pid,user,comm -w -w'      # 进程补全
+# zstyle ':completion:*:history-words' remove-all-dups yes                           # 历史去重
+{{end}}
+
+{{if .ZshConfig.Keybindings}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                         ⌨️ ZSH 键盘绑定配置                                     │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+{{if .ZshConfig.Keybindings.HistorySearch}}
+# 🔍 历史搜索绑定
+{{range $key, $action := .ZshConfig.Keybindings.HistorySearch}}
+bindkey "{{keyBinding $key}}" {{$action}}  # ⌨️ {{keyBinding $key}} → {{$action}}
+{{end}}
+{{end}}
+
+{{if .ZshConfig.Keybindings.WordNavigation}}
+# 🔄 单词导航绑定
+{{range $key, $action := .ZshConfig.Keybindings.WordNavigation}}
+bindkey "{{keyBinding $key}}" {{$action}}  # ⌨️ {{keyBinding $key}} → {{$action}}
+{{end}}
+{{end}}
+
+{{if .ZshConfig.Keybindings.LineNavigation}}
+# ↔️ 行内导航绑定
+{{range $key, $action := .ZshConfig.Keybindings.LineNavigation}}
+bindkey "{{keyBinding $key}}" {{$action}}  # ⌨️ {{keyBinding $key}} → {{$action}}
+{{end}}
+{{end}}
+{{end}}
+
+{{if .ZshConfig.GitTools}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                         🔗 Git 工具集成配置                                     │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+{{range $name, $tool := .ZshConfig.GitTools}}
+{{if $tool.Enabled}}
+# 🛠️ {{$name | title}} 工具配置
+
+{{if $tool.Aliases}}
+# 🔗 {{$name | title}} 别名
+{{range $alias, $cmd := $tool.Aliases}}
+alias {{$alias}}="{{$cmd}}"  # 🔗 {{$alias}} → {{$cmd}}
+{{end}}
+{{end}}
+
+{{if $tool.GitConfig}}
+# ⚙️ {{$name | title}} Git 配置
+{{range $key, $value := $tool.GitConfig}}
+git config --global {{$key}} "{{$value}}" 2>/dev/null || true  # ⚙️ {{$key}}
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{end}}
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                            🛠️ 自定义函数库                                    ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+{{if .Functions}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        ⚡ 高级自定义函数                                        │
+# └──────────────────────────────────────────────────────────────────────────────┘
+{{range $name, $func := .Functions.Functions}}
+
+# 🔧 {{$name}} - {{$func.Description}}
+{{generateFunctionComment $name $func.Zsh}}
+{{$func.Zsh}}
+
+{{end}}
+{{end}}
+
+{{if .ZshConfig.Performance}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        🚀 高性能开发助手函数                                    │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🚀 开发项目快速启动函数
+dev() {
+    case "$1" in
+        "go")
+            if [ -f "go.mod" ]; then
+                echo "🐹 启动Go项目 (使用20核心)..."
+                go run .
+            else
+                echo "❌ 不是Go项目目录"
+            fi
+            ;;
+        "java")
+            if [ -f "pom.xml" ]; then
+                echo "☕ 启动Spring Boot项目 (JVM已优化)..."
+                mvn spring-boot:run
+            elif [ -f "build.gradle" ]; then
+                echo "🐘 启动Gradle项目 (20并行任务)..."
+                ./gradlew bootRun
+            else
+                echo "❌ 不是Java项目目录"
+            fi
+            ;;
+        "node"|"js"|"svelte")
+            if [ -f "package.json" ]; then
+                echo "🟢 启动Node.js项目 (内存优化已启用)..."
+                npm run dev
+            else
+                echo "❌ 不是Node.js项目目录"
+            fi
+            ;;
+        *)
+            echo "📋 用法: dev [go|java|node|svelte]"
+            echo "🚀 支持的项目类型:"
+            echo "  🐹 go     - Go项目 (20核心优化)"
+            echo "  ☕ java   - Java项目 (32GB堆内存)"
+            echo "  🟢 node   - Node.js项目 (8GB内存限制)"
+            echo "  ⚡ svelte - Svelte项目"
+            ;;
+    esac
+}
+
+# 🤖 AI助手函数
+ai() {
+    local model="${2:-deepseek-r1:7b}"
+    case "$1" in
+        "code")
+            echo "🤖 AI代码助手 (模型: $model)"
+            echo "📝 输入代码问题，Ctrl+D结束:"
+            local input=$(cat)
+            ollama run "$model" "请帮我分析这段代码并提供优化建议: $input"
+            ;;
+        "review")
+            echo "👀 AI代码审查 (模型: $model)"
+            echo "📝 输入要review的代码，Ctrl+D结束:"
+            local code=$(cat)
+            ollama run "$model" "请review以下代码并提出改进建议: $code"
+            ;;
+        "debug")
+            echo "🐛 AI调试助手 (模型: $model)"
+            echo "📝 描述你遇到的错误，Ctrl+D结束:"
+            local error=$(cat)
+            ollama run "$model" "请帮我分析这个错误并提供解决方案: $error"
+            ;;
+        "explain")
+            echo "📚 AI代码解释 (模型: $model)"
+            echo "📝 输入要解释的代码，Ctrl+D结束:"
+            local code=$(cat)
+            ollama run "$model" "请用中文详细解释这段代码的功能和工作原理: $code"
+            ;;
+        "optimize")
+            echo "⚡ AI性能优化 (模型: $model)"
+            echo "📝 输入要优化的代码，Ctrl+D结束:"
+            local code=$(cat)
+            ollama run "$model" "请分析这段代码的性能瓶颈并提供优化建议，考虑20核CPU和48GB内存环境: $code"
+            ;;
+        "chat")
+            echo "💬 AI对话模式 (模型: $model)"
+            ollama run "$model"
+            ;;
+        *)
+            echo "🤖 AI助手可用命令:"
+            echo "  🤖 ai code    - 代码分析和建议"
+            echo "  👀 ai review  - 代码审查"
+            echo "  🐛 ai debug   - 错误调试"
+            echo "  📚 ai explain - 代码解释"
+            echo "  ⚡ ai optimize- 性能优化建议"
+            echo "  💬 ai chat    - 自由对话"
+            echo ""
+            echo "🎮 GPU状态: $(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null || echo "N/A")% 使用中"
+            ;;
+    esac
+}
+
+# 📊 AI状态监控
+ai_status() {
+    echo "🎮 GPU状态:"
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv,noheader
+    else
+        echo "  ❌ 未检测到NVIDIA GPU"
+    fi
+    echo ""
+    echo "🤖 Ollama状态:"
+    if command -v ollama >/dev/null 2>&1; then
+        ollama ps
+    else
+        echo "  ❌ Ollama未安装"
+    fi
+    echo ""
+    echo "📊 AI性能配置:"
+    echo "  🔄 并行请求: ${OLLAMA_NUM_PARALLEL:-4}"
+    echo "  🧠 预加载模型: ${OLLAMA_MAX_LOADED_MODELS:-3}"
+    echo "  🎮 GPU内存分配: ${OLLAMA_GPU_MEMORY_FRACTION:-0.9} (90%)"
+}
+
+# 🎮 系统模式切换函数
+game_mode() {
+    echo "🎮 启动游戏模式..."
+    echo ""
+
+    # 📴 停止开发相关服务
+    echo "📴 停止开发服务..."
+    local services=("mariadb" "valkey" "ollama" "docker")
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            sudo systemctl stop "$service" 2>/dev/null && echo "  ✅ $service 已停止"
+        else
+            echo "  ⏸️  $service 未运行"
+        fi
+    done
+
+    # 🎮 清理GPU内存
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        echo "🎮 清理GPU内存..."
+        nvidia-smi --gpu-reset >/dev/null 2>&1 && echo "  ✅ GPU内存已清理"
+    fi
+
+    # 🧹 系统缓存清理
+    echo "🧹 清理系统缓存..."
+    sync && echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null 2>&1
+    echo "  ✅ 系统缓存已清理"
+
+    echo ""
+    echo "🚀 游戏模式已启用！"
+    echo "💡 系统资源状态:"
+    echo "   🧠 内存: $(free -h | awk '/^Mem:/ {print $7}') 可用"
+    echo "   💻 CPU: 20核心已释放给Windows"
+    echo "   🎮 GPU: RTX显存已完全释放"
+    echo ""
+    echo "🎯 使用 'wsl --shutdown' 完全关闭WSL2释放全部资源"
+}
+
+# 💻 开发模式函数
+dev_mode() {
+    echo "💻 启动开发模式..."
+    echo ""
+
+    # 🚀 启动开发服务
+    echo "🚀 启动开发服务..."
+    local services=("mariadb" "valkey" "ollama")
+    for service in "${services[@]}"; do
+        if ! systemctl is-active --quiet "$service" 2>/dev/null; then
+            sudo systemctl start "$service" 2>/dev/null && echo "  ✅ $service 已启动"
+        else
+            echo "  ✅ $service 已运行"
+        fi
+    done
+
+    # 🤖 检查AI环境
+    echo "🤖 检查AI环境..."
+    if command -v ollama >/dev/null 2>&1; then
+        echo "  ✅ Ollama可用 - GPU加速已启用"
+        if command -v nvidia-smi >/dev/null 2>&1; then
+            echo "  📊 GPU状态: $(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits)% 使用中"
+        fi
+    fi
+
+    echo ""
+    echo "⚡ 开发模式已恢复！"
+    echo "🔧 开发环境状态:"
+    echo "   💻 CPU: 20核心可用"
+    echo "   🧠 内存: 48GB分配给WSL2"
+    echo "   🤖 AI: Ollama + DeepSeek R1 7B 就绪"
+    echo "   📊 快速命令: dev [go|java|node], ai code, ai_status"
+}
+
+# 🔗 别名定义
+alias gamemode='game_mode'
+alias devmode='dev_mode'
+
+# 📊 性能监控函数
+perf_monitor() {
+    echo "📊 系统性能监控:"
+    echo ""
+
+    # 💻 CPU使用率
+    if command -v btop >/dev/null 2>&1; then
+        echo "💻 CPU使用率:"
+        echo "  使用 'btop' 查看详细CPU使用情况"
+    fi
+
+    # 🧠 内存使用情况
+    echo "🧠 内存使用:"
+    free -h | grep -E "Mem|Swap"
+
+    # 💾 磁盘I/O
+    if command -v duf >/dev/null 2>&1; then
+        echo ""
+        echo "💾 磁盘使用:"
+        duf
+    fi
+
+    # 🎮 GPU状态
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        echo ""
+        echo "🎮 GPU状态:"
+        nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total --format=csv,noheader
+    fi
+
+    # 🌐 网络状态
+    echo ""
+    echo "🌐 网络接口:"
+    ip addr show | grep -E "inet.*scope global" | head -3
+
+    # 🔧 开发服务状态
+    echo ""
+    echo "🔧 开发服务状态:"
+    for service in mariadb valkey ollama docker; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            echo "  ✅ $service: 运行中"
+        else
+            echo "  ⏸️  $service: 已停止"
+        fi
+    done
+}
+
+alias perfmon='perf_monitor'
+alias sysmon='perf_monitor'
+{{end}}
+
+{{if .Platform.WSL}}
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                         🪟 WSL 特定函数                                        │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 🖱️ 打开文件管理器
+open() {
+    if [[ $# -eq 0 ]]; then
+        explorer.exe .
+    else
+        explorer.exe "$@"
+    fi
+}
+
+# 📋 复制到 Windows 剪贴板
+clip() {
+    if [[ $# -eq 0 ]]; then
+        clip.exe
+    else
+        echo "$@" | clip.exe
+    fi
+}
+
+{{if .Platform.WSL.WindowsHome}}
+# 🏠 Windows 家目快捷访问
+winhome() {
+    cd "{{.Platform.WSL.WindowsHome}}"
+}
+{{end}}
+{{end}}
+
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                         🛠️ 实用工具函数库                                       │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 📁 创建目录并进入
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# 📦 智能提取各种压缩格式
+extract() {
+    if [ -f "$1" ]; then
+        case "$1" in
+            *.tar.bz2)   tar xjf "$1"     ;;
+            *.tar.gz)    tar xzf "$1"     ;;
+            *.bz2)       bunzip2 "$1"     ;;
+            *.rar)       unrar x "$1"     ;;
+            *.gz)        gunzip "$1"      ;;
+            *.tar)       tar xf "$1"      ;;
+            *.tbz2)      tar xjf "$1"     ;;
+            *.tgz)       tar xzf "$1"     ;;
+            *.zip)       unzip "$1"       ;;
+            *.Z)         uncompress "$1"  ;;
+            *.7z)        7z x "$1"        ;;
+            *.xz)        unxz "$1"        ;;
+            *.lzma)      unlzma "$1"      ;;
+            *)           echo "❌ '$1' 无法被 extract() 提取" ;;
+        esac
+    else
+        echo "❌ '$1' 不是有效文件"
+    fi
+}
+
+# 🔌 端口管理
+killport() {
+    if [ -z "$1" ]; then
+        echo "📋 用法: killport <端口号>"
+        return 1
+    fi
+    lsof -ti:$1 | xargs kill -9
+    echo "✅ 端口 $1 上的进程已终止"
+}
+
+# 🌐 快速HTTP服务器
+serve() {
+    local port=${1:-8000}
+    echo "🌐 启动HTTP服务器在端口 $port..."
+    if command -v python >/dev/null 2>&1; then
+        python -m http.server "$port"
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 -m http.server "$port"
+    else
+        echo "❌ 需要安装 Python"
+    fi
+}
+
+# 📊 性能监控函数
+psmem() {
+    if command -v procs >/dev/null; then
+        procs --sortd mem | head -15
+    else
+        ps aux | sort -nr -k 4 | head -10
+    fi
+}
+
+pscpu() {
+    if command -v procs >/dev/null; then
+        procs --sortd cpu | head -15
+    else
+        ps aux | sort -nr -k 3 | head -10
+    fi
+}
+
+{{if .Paths.Projects}}
+{{$projectsPath := getPlatformValue .Paths.Projects}}
+{{if $projectsPath}}
+# 🚀 快速项目目录导航
+cdp() {
+    cd "{{expandEnv $projectsPath}}/${1:-}"
+}
+{{end}}
+{{end}}
+
+# ℹ️ 系统信息
+sysinfo() {
+    echo "╔══════════════════════════════════════╗"
+    echo "║            📊 系统信息               ║"
+    echo "╚══════════════════════════════════════╝"
+    echo "🖥️  操作系统: {{.Platform.OS}}/{{.Platform.Architecture}}"
+    {{if .Platform.WSL}}
+    {{if .Platform.WSL.Distribution}}
+    echo "🪟 WSL: {{.Platform.WSL.Distribution}} ({{.Platform.WSL.Version}})"
+    {{end}}
+    {{end}}
+    {{if .Platform.Linux}}
+    {{if .Platform.Linux.Distribution}}
+    echo "🐧 Linux: {{.Platform.Linux.Distribution}} {{.Platform.Linux.Version}}"
+    {{end}}
+    {{if .Platform.Linux.PackageManager}}
+    echo "📦 包管理器: {{.Platform.Linux.PackageManager}}"
+    {{end}}
+    {{end}}
+    echo "🐚 Shell: $SHELL ($ZSH_VERSION)"
+    {{if .User.Name}}
+    echo "👤 用户: {{.User.Name}} ({{.User.Email}})"
+    {{end}}
+    echo "✏️  编辑器: $EDITOR"
+    echo "🌐 浏览器: $BROWSER"
+}
+
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        ⚡ ZSH 性能优化配置                                      │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+{{if .ZshConfig.Performance.AsyncLoading}}
+# 🔄 异步加载配置
+autoload -Uz add-zsh-hook
+defer_init() {
+    return 0
+}
+add-zsh-hook precmd defer_init
+{{end}}
+
+{{if .ZshConfig.Performance.PathDeduplication}}
+# 🛣️ PATH 去重优化
+typeset -U path PATH
+{{end}}
+
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        📦 ZSH 插件管理器 (Zap)                                 │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+# 💡 安装 Zap: zsh <(curl -s https://raw.githubusercontent.com/zap-zsh/zap/master/install.zsh)
+
+if [[ -f "$HOME/.local/share/zap/zap.zsh" ]]; then
+    source "$HOME/.local/share/zap/zap.zsh"
+
+    # 🔌 推荐插件配置
+    plug "zap-zsh/supercharge"             # ⚡ Zap 核心增强
+    plug "zap-zsh/exa"                     # 📁 Exa ls 替代工具集成
+    plug "esc/conda-zsh-completion"        # 🐍 Conda 环境补全
+    plug "hlissner/zsh-autopair"           # ⚖️ 智能括号配对
+    plug "MichaelAquilina/zsh-you-should-use"  # 💡 命令别名建议
+    plug "zap-zsh/fzf"                     # 🔍 FZF 增强集成
+    plug "zsh-users/zsh-autosuggestions"   # 🔮 历史命令建议
+    plug "zap-zsh/zap-prompt"              # 🎨 Zap 默认主题
+    plug "zsh-users/zsh-syntax-highlighting"  # 🌈 语法高亮 (最后加载)
+    plug "wintermi/zsh-brew"               # 🍺 Homebrew 集成 (macOS)
+    plug "Aloxaf/fzf-tab"                  # 📋 FZF Tab 补全增强
+else
+    echo "⚠️  Zap 插件管理器未安装"
+    echo "📋 安装: zsh <(curl -s https://raw.githubusercontent.com/zap-zsh/zap/master/install.zsh)"
+fi
+
+# ┌──────────────────────────────────────────────────────────────────────────────┐
+# │                        📝 本地自定义配置                                        │
+# └──────────────────────────────────────────────────────────────────────────────┘
+
+{{if .ZshConfig.XDGDirectories.Enabled}}
+[[ -f "$XDG_CONFIG_HOME/zsh/zshrc.local" ]] && source "$XDG_CONFIG_HOME/zsh/zshrc.local"
+{{else}}
+[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+{{end}}
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                      🎉 ZSH 配置加载完成 🎉                                  ║
+# ║                    欢迎使用 dotfiles-go 配置                                  ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝

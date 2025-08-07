@@ -1,0 +1,24 @@
+{
+  "user": {
+    "name": "afu",
+    "email": "afu@example.com",
+    "editor": "code-insiders",
+    "browser": "brave"
+  },
+  "paths": {
+    "projects": {
+      "linux": "$HOME/Projects",
+      "windows": "D:\\Projects",
+      "default": "$HOME/Projects"
+    },
+    "dotfiles": "~/dotfiles"
+  },
+  "environment": {
+    "LANG": "zh_CN.UTF-8"
+  },
+  "features": {
+    "git_integration": true,
+    "nodejs_management": true,
+    "python_management": true
+  }
+}

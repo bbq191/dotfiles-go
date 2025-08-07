@@ -1,0 +1,327 @@
+{
+  "proxy": {
+    "enabled": true,
+    "auto_detect": true,
+    "profiles": {
+      "default": {
+        "https_proxy": "http://127.0.0.1:6153",
+        "http_proxy": "http://127.0.0.1:6153",
+        "all_proxy": "socks5://127.0.0.1:6153",
+        "no_proxy": "localhost,127.*,192.168.*,10.*,30.*,40.*,172.16.*,172.17.*,172.18.*,172.19.*,172.20.*,172.21.*,172.22.*,172.23.*,172.24.*,172.25.*,172.26.*,172.27.*,172.28.*,172.29.*,172.30.*,172.31.*"
+      },
+      "work": {
+        "https_proxy": "${WORK_PROXY_HTTP:-http://proxy.company.com:8080}",
+        "http_proxy": "${WORK_PROXY_HTTP:-http://proxy.company.com:8080}",
+        "all_proxy": "${WORK_PROXY_SOCKS:-socks5://proxy.company.com:1080}",
+        "no_proxy": "localhost,127.*,*.company.com,*.internal"
+      },
+      "none": {
+        "https_proxy": "",
+        "http_proxy": "",
+        "all_proxy": "",
+        "no_proxy": ""
+      }
+    },
+    "active_profile": "${PROXY_PROFILE:-default}"
+  },
+
+  "xdg_directories": {
+    "enabled": true,
+    "config_home": {
+      "linux": "$HOME/.config",
+      "macos": "$HOME/.config",
+      "windows": "$HOME/AppData/Local"
+    },
+    "data_home": {
+      "linux": "$HOME/.local/share",
+      "macos": "$HOME/.local/share",
+      "windows": "$HOME/AppData/Local"
+    },
+    "state_home": {
+      "linux": "$HOME/.local/state",
+      "macos": "$HOME/.local/state",
+      "windows": "$HOME/AppData/Local/State"
+    },
+    "cache_home": {
+      "linux": "$HOME/.cache",
+      "macos": "$HOME/.cache",
+      "windows": "$HOME/AppData/Local/Temp"
+    },
+    "runtime_dir": {
+      "linux": "/run/user/$(id -u)",
+      "macos": "/tmp",
+      "windows": "%TEMP%"
+    },
+    "user_bin": {
+      "linux": "$HOME/.local/bin",
+      "macos": "$HOME/.local/bin",
+      "windows": "$HOME/AppData/Local/Programs"
+    }
+  },
+
+  "history_advanced": {
+    "file": "$XDG_STATE_HOME/bash/history",
+    "backup_dir": "$XDG_DATA_HOME/dotfiles/history_backup",
+    "size": 10000,
+    "save_size": 50000,
+    "options": {
+      "share_history": true,
+      "hist_expire_dups_first": true,
+      "hist_ignore_dups": true,
+      "hist_ignore_all_dups": true,
+      "hist_ignore_space": true,
+      "hist_save_no_dups": true,
+      "hist_verify": true,
+      "hist_beep": true,
+      "extended_history": true
+    }
+  },
+
+  "completion_advanced": {
+    "cache_path": "$XDG_CACHE_HOME/zsh/zcompcache",
+    "dump_file": "$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION",
+    "options": {
+      "auto_menu": true,
+      "always_to_end": true,
+      "complete_in_word": true,
+      "flow_control": true
+    },
+    "styles": {
+      "matcher_list": "m:{a-zA-Z}={A-Za-z} r:|[._-]=* r:|=* l:|=* r:|=*",
+      "list_colors": "${(s.:.)LS_COLORS}",
+      "special_dirs": true,
+      "systemctl_tag_order": "commands",
+      "pacman_force_list": true,
+      "pacman_menu": true,
+      "accept_exact": "*(N)",
+      "use_cache": true
+    }
+  },
+
+  "modern_tools": {
+    "replacements": {
+      "ls": {
+        "tool": "eza",
+        "fallback": "ls --color=auto --group-directories-first",
+        "aliases": {
+          "ls": "eza --color=auto --group-directories-first",
+          "ll": "eza -l --color=auto --group-directories-first",
+          "la": "eza -la --color=auto --group-directories-first",
+          "lt": "eza --tree --color=auto"
+        }
+      },
+      "cat": {
+        "tool": "bat",
+        "aliases": {
+          "cat": "bat",
+          "catn": "bat --style=plain"
+        }
+      },
+      "grep": {
+        "tool": "rg",
+        "aliases": {
+          "rgrep": "rg",
+          "search": "rg"
+        }
+      },
+      "find": {
+        "tool": "fd",
+        "aliases": {
+          "find": "fd"
+        }
+      },
+      "du": {
+        "tool": "dust",
+        "aliases": {
+          "du": "dust"
+        }
+      },
+      "df": {
+        "tool": "duf",
+        "fallback": "df -h",
+        "aliases": {
+          "df": "duf"
+        }
+      },
+      "ps": {
+        "tool": "procs",
+        "aliases": {
+          "ps": "procs"
+        }
+      },
+      "top": {
+        "tool": "btop",
+        "fallback": "htop",
+        "aliases": {
+          "top": "btop",
+          "htop": "btop"
+        }
+      },
+      "cd": {
+        "tool": "zoxide",
+        "init_command": "eval \"$(zoxide init {shell})\"",
+        "aliases": {
+          "cd": "z",
+          "cdi": "zi"
+        },
+        "env_vars": {
+          "ZOXIDE_DATA_DIR": "$XDG_DATA_HOME/zoxide"
+        }
+      }
+    }
+  },
+
+  "development_environments": {
+    "python": {
+      "PIPENV_VENV_IN_PROJECT": "1"
+    },
+    "node": {
+      "NPM_CONFIG_USERCONFIG": "$XDG_CONFIG_HOME/npm/config",
+      "NPM_CONFIG_CACHE": "$XDG_CACHE_HOME/npm",
+      "PNPM_HOME": "$XDG_DATA_HOME/pnpm",
+      "YARN_CACHE_FOLDER": "$XDG_CACHE_HOME/yarn"
+    },
+    "pipx": {
+      "PIPX_HOME": "$XDG_DATA_HOME/pipx",
+      "PIPX_BIN_DIR": "$XDG_DATA_HOME/pipx/bin",
+      "PIPX_MAN_DIR": "$XDG_DATA_HOME/man"
+    },
+    "vscode": {
+      "EDITOR_HOME": {
+        "bash": "/c/Applications/Code-Insiders",
+        "powershell": "C:\\Applications\\Code-Insiders",
+        "zsh": "/c/Applications/Code-Insiders"
+      }
+    },
+    "mysql": {
+      "MYSQL_HOME": {
+        "bash": "/c/Program Files/MySQL/MySQL Server 8.0",
+        "powershell": "C:\\Program Files\\MySQL\\MySQL Server 8.0",
+        "zsh": "/c/Program Files/MySQL/MySQL Server 8.0"
+      }
+    },
+    "claude_code": {
+      "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Applications\\DevEnvironment\\Git\\bin\\bash.exe"
+    }
+  },
+
+  "fzf_config": {
+    "enabled": true,
+    "commands": {
+      "default": "fd --type f --hidden --follow --exclude .git",
+      "ctrl_t": "fd --type f --hidden --follow --exclude .git",
+      "alt_c": "fd --type d --hidden --follow --exclude .git"
+    },
+    "theme": "--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 --color=info:#8be9fd,prompt:#50fa7b,pointer:#ff79c6 --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4 --height=60% --layout=reverse --border --margin=1 --padding=1",
+    "preview": {
+      "ctrl_t": "--preview 'bat -n --color=always --line-range :500 {}'",
+      "ctrl_t_fallback": "--preview 'cat {}'",
+      "alt_c": "--preview 'eza --tree --color=always {} | head -200'",
+      "alt_c_fallback": "--preview 'tree -C {} | head -200'",
+      "alt_c_final_fallback": "--preview 'ls -la {}'"
+    }
+  },
+
+  "keybindings": {
+    "history_search": {
+      "up_arrow": "history-search-backward",
+      "down_arrow": "history-search-forward"
+    },
+    "word_navigation": {
+      "ctrl_right": "forward-word",
+      "ctrl_left": "backward-word"
+    },
+    "line_navigation": {
+      "delete": "delete-char",
+      "home": "beginning-of-line",
+      "end": "end-of-line"
+    }
+  },
+
+  "version_managers": {
+    "fnm": {
+      "enabled": true,
+      "init_command": "eval \"$(fnm env --use-on-cd --shell zsh)\"",
+      "env_vars": {
+        "FNM_DIR": "$XDG_DATA_HOME/fnm",
+        "FNM_VERSION_FILE_STRATEGY": "local",
+        "FNM_COREPACK_ENABLED": "true"
+      },
+      "post_install": ["fnm install --lts", "fnm default lts-latest"]
+    },
+    "pyenv": {
+      "enabled": true,
+      "init_command": "",
+      "env_vars": {
+        "PYENV_ROOT": "$XDG_DATA_HOME/pyenv"
+      },
+      "path_additions": ["$PYENV_ROOT/bin", "$PYENV_ROOT/shims"],
+      "post_install": ["pyenv install 3.11", "pyenv global 3.11"]
+    },
+    "sdkman": {
+      "enabled": true,
+      "init_command": "sdk env install",
+      "env_vars": {
+        "SDKMAN_DIR": "$XDG_DATA_HOME/sdkman"
+      },
+      "path_additions": ["$SDKMAN_DIR/bin"],
+      "post_install": ["sdk install java"]
+    },
+    "g": {
+      "enabled": true,
+      "init_command": "",
+      "env_vars": {
+        "G_HOME": "$XDG_DATA_HOME/g"
+      },
+      "path_additions": ["$G_HOME/bin"],
+      "post_install": ["g install stable", "g set stable"]
+    }
+  },
+
+  "git_tools": {
+    "delta": {
+      "enabled": true,
+      "git_config": {
+        "core.pager": "delta",
+        "delta.navigate": "true",
+        "delta.light": "false",
+        "delta.side-by-side": "true",
+        "delta.line-numbers": "true",
+        "merge.conflictstyle": "diff3",
+        "diff.colorMoved": "default"
+      }
+    },
+    "lazygit": {
+      "enabled": true,
+      "aliases": {
+        "lg": "lazygit",
+        "lgit": "lazygit"
+      }
+    },
+    "gh": {
+      "enabled": true,
+      "aliases": {
+        "pv": "gh pr view",
+        "pc": "gh pr create",
+        "pm": "gh pr merge"
+      },
+      "extensions": ["gh-copilot"]
+    }
+  },
+
+  "external_tools": {
+    "auto_init": {
+      "thefuck": "eval \"$(thefuck --alias)\"",
+      "gh_copilot": "eval \"$(gh copilot alias -- {shell})\"",
+      "starship": "eval \"$(starship init {shell})\"",
+      "atuin": "eval \"$(atuin init {shell})\""
+    }
+  },
+
+  "performance": {
+    "makeflags": "-j$(nproc)",
+    "async_loading": true,
+    "completion_cache": true,
+    "path_deduplication": true
+  }
+}

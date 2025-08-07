@@ -1,0 +1,106 @@
+{
+  "mkcd": {
+    "description": "创建目录并进入",
+    "bash": "mkcd() { mkdir -p \"$1\" && cd \"$1\"; }",
+    "powershell": "function mkcd($dir) { New-Item -ItemType Directory -Force -Path $dir | Set-Location }",
+    "zsh": "mkcd() { mkdir -p \"$1\" && cd \"$1\"; }"
+  },
+
+  "extract": {
+    "description": "智能提取各种压缩格式",
+    "bash": "extract() {\n    if [ -f \"$1\" ]; then\n        case \"$1\" in\n            *.tar.bz2)   tar xjf \"$1\"     ;;\n            *.tar.gz)    tar xzf \"$1\"     ;;\n            *.bz2)       bunzip2 \"$1\"     ;;\n            *.rar)       unrar x \"$1\"     ;;\n            *.gz)        gunzip \"$1\"      ;;\n            *.tar)       tar xf \"$1\"      ;;\n            *.tbz2)      tar xjf \"$1\"     ;;\n            *.tgz)       tar xzf \"$1\"     ;;\n            *.zip)       unzip \"$1\"       ;;\n            *.Z)         uncompress \"$1\"  ;;\n            *.7z)        7z x \"$1\"        ;;\n            *.xz)        unxz \"$1\"        ;;\n            *.lzma)      unlzma \"$1\"      ;;\n            *)           echo \"'$1' 无法被 extract() 提取\" ;;\n        esac\n    else\n        echo \"'$1' 不是有效文件\"\n    fi\n}",
+    "powershell": "function extract($file) {\n    if (Test-Path $file) {\n        $ext = [System.IO.Path]::GetExtension($file).ToLower()\n        switch -regex ($ext) {\n            '\\.zip$' { Expand-Archive $file -Force }\n            '\\.7z$' { & 7z x $file }\n            '\\.rar$' { & unrar x $file }\n            '\\.tar$' { & tar xf $file }\n            '\\.gz$' { & gzip -d $file }\n            default { Write-Host \"'$file' 无法被 extract() 提取\" -ForegroundColor Red }\n        }\n    } else {\n        Write-Host \"'$file' 不是有效文件\" -ForegroundColor Red\n    }\n}",
+    "zsh": "extract() {\n    if [ -f \"$1\" ]; then\n        case \"$1\" in\n            *.tar.bz2)   tar xjf \"$1\"     ;;\n            *.tar.gz)    tar xzf \"$1\"     ;;\n            *.bz2)       bunzip2 \"$1\"     ;;\n            *.rar)       unrar x \"$1\"     ;;\n            *.gz)        gunzip \"$1\"      ;;\n            *.tar)       tar xf \"$1\"      ;;\n            *.tbz2)      tar xjf \"$1\"     ;;\n            *.tgz)       tar xzf \"$1\"     ;;\n            *.zip)       unzip \"$1\"       ;;\n            *.Z)         uncompress \"$1\"  ;;\n            *.7z)        7z x \"$1\"        ;;\n            *.xz)        unxz \"$1\"        ;;\n            *.lzma)      unlzma \"$1\"      ;;\n            *)           echo \"'$1' 无法被 extract() 提取\" ;;\n        esac\n    else\n        echo \"'$1' 不是有效文件\"\n    fi\n}"
+  },
+
+  "killport": {
+    "description": "杀死占用指定端口的进程",
+    "bash": "killport() {\n    if [ -z \"$1\" ]; then\n        echo \"用法: killport <端口号>\"\n        return 1\n    fi\n    \n    # 在Windows环境下使用netstat和taskkill\n    if [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" ]]; then\n        local pids=$(netstat -ano | grep \":$1 \" | awk '{print $5}' | sort -u)\n        if [ -z \"$pids\" ]; then\n            echo \"端口 $1 上没有活动进程\"\n            return 0\n        fi\n        for pid in $pids; do\n            if [ \"$pid\" != \"0\" ]; then\n                taskkill //PID $pid //F 2>/dev/null && echo \"已终止PID $pid (端口 $1)\"\n            fi\n        done\n    else\n        # 在Linux/macOS环境下使用lsof\n        lsof -ti:$1 | xargs kill -9\n    fi\n}",
+    "powershell": "function killport($port) {\n    if (-not $port) {\n        Write-Host \"用法: killport <端口号>\" -ForegroundColor Yellow\n        return\n    }\n    $processes = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue\n    if ($processes) {\n        $processes | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n        Write-Host \"已终止端口 $port 上的进程\" -ForegroundColor Green\n    } else {\n        Write-Host \"端口 $port 上没有活动进程\" -ForegroundColor Yellow\n    }\n}",
+    "zsh": "killport() {\n    if [ -z \"$1\" ]; then\n        echo \"用法: killport <端口号>\"\n        return 1\n    fi\n    lsof -ti:$1 | xargs kill -9\n}"
+  },
+
+  "serve": {
+    "description": "快速启动 HTTP 服务器",
+    "bash": "serve() {\n    local port=${1:-8000}\n    if command -v python > /dev/null; then\n        python -m http.server \"$port\"\n    elif command -v python3 > /dev/null; then\n        python3 -m http.server \"$port\"\n    else\n        echo \"需要安装 Python\"\n    fi\n}",
+    "powershell": "function serve($port = 8000) {\n    if (Get-Command python -ErrorAction SilentlyContinue) {\n        python -m http.server $port\n    } elseif (Get-Command python3 -ErrorAction SilentlyContinue) {\n        python3 -m http.server $port\n    } else {\n        Write-Host \"需要安装 Python\" -ForegroundColor Red\n    }\n}",
+    "zsh": "serve() {\n    local port=${1:-8000}\n    if command -v python > /dev/null; then\n        python -m http.server \"$port\"\n    elif command -v python3 > /dev/null; then\n        python3 -m http.server \"$port\"\n    else\n        echo \"需要安装 Python\"\n    fi\n}"
+  },
+
+  "weather": {
+    "description": "获取天气信息",
+    "bash": "weather() {\n    local location=${1:-\"Beijing\"}\n    curl -s \"wttr.in/$location?lang=zh\"\n}",
+    "powershell": "function weather($location = \"Beijing\") {\n    try {\n        (Invoke-WebRequest -Uri \"wttr.in/$location?lang=zh\" -UseBasicParsing).Content\n    } catch {\n        Write-Host \"无法获取天气信息: $($_.Exception.Message)\" -ForegroundColor Red\n    }\n}",
+    "zsh": "weather() {\n    local location=${1:-\"Beijing\"}\n    curl -s \"wttr.in/$location?lang=zh\"\n}"
+  },
+
+  "myip": {
+    "description": "获取公网 IP 地址",
+    "bash": "myip() {\n    curl -s ipinfo.io/ip\n}",
+    "powershell": "function myip {\n    try {\n        (Invoke-WebRequest -Uri 'ipinfo.io/ip' -UseBasicParsing).Content.Trim()\n    } catch {\n        Write-Host \"无法获取 IP 地址: $($_.Exception.Message)\" -ForegroundColor Red\n    }\n}",
+    "zsh": "myip() {\n    curl -s ipinfo.io/ip\n}"
+  },
+
+  "ports": {
+    "description": "显示端口使用情况",
+    "bash": "ports() {\n    if command -v ss > /dev/null 2>&1; then\n        echo \"监听端口:\"\n        ss -tuln | head -1\n        ss -tuln | grep LISTEN | sort -k5 -n\n    elif command -v netstat > /dev/null 2>&1; then\n        echo \"监听端口:\"\n        netstat -an | grep LISTEN | sort\n    else\n        echo \"错误: 未找到 ss 或 netstat 命令\"\n    fi\n}",
+    "powershell": "function ports {\n    Get-NetTCPConnection | Where-Object State -eq Listen | Select-Object LocalAddress,LocalPort,State,OwningProcess | Sort-Object LocalPort\n}",
+    "zsh": "ports() {\n    if command -v ss > /dev/null 2>&1; then\n        echo \"监听端口:\"\n        ss -tuln | head -1\n        ss -tuln | grep LISTEN | sort -k5 -n\n    elif command -v netstat > /dev/null 2>&1; then\n        echo \"监听端口:\"\n        netstat -an | grep LISTEN | sort\n    else\n        echo \"错误: 未找到 ss 或 netstat 命令\"\n    fi\n}"
+  },
+
+  "psmem": {
+    "description": "显示内存占用最高的进程",
+    "bash": "psmem() {\n    if command -v procs > /dev/null; then\n        procs --sortd mem | head -15\n    else\n        ps aux | sort -nr -k 4 | head -10\n    fi\n}",
+    "powershell": "function psmem {\n    Get-Process | Sort-Object WorkingSet -Descending | Select-Object -First 10 ProcessName,Id,@{Name='Memory(MB)';Expression={[math]::Round($_.WorkingSet/1MB,2)}}\n}",
+    "zsh": "psmem() {\n    if command -v procs > /dev/null; then\n        procs --sortd mem | head -15\n    else\n        ps aux | sort -nr -k 4 | head -10\n    fi\n}"
+  },
+
+  "pscpu": {
+    "description": "显示 CPU 占用最高的进程",
+    "bash": "pscpu() {\n    if command -v procs > /dev/null; then\n        procs --sortd cpu | head -15\n    else\n        ps aux | sort -nr -k 3 | head -10\n    fi\n}",
+    "powershell": "function pscpu {\n    Get-Process | Sort-Object CPU -Descending | Select-Object -First 10 ProcessName,Id,@{Name='CPU(%)';Expression={$_.CPU}}\n}",
+    "zsh": "pscpu() {\n    if command -v procs > /dev/null; then\n        procs --sortd cpu | head -15\n    else\n        ps aux | sort -nr -k 3 | head -10\n    fi\n}"
+  },
+
+  "findfile": {
+    "description": "快速查找文件",
+    "bash": "findfile() {\n    if command -v fd > /dev/null; then\n        fd -t f \"$1\"\n    else\n        find . -name \"*$1*\" -type f 2>/dev/null\n    fi\n}",
+    "powershell": "function findfile($pattern) {\n    Get-ChildItem -Recurse -Name \"*$pattern*\" -File -ErrorAction SilentlyContinue\n}",
+    "zsh": "findfile() {\n    if command -v fd > /dev/null; then\n        fd -t f \"$1\"\n    else\n        find . -name \"*$1*\" -type f 2>/dev/null\n    fi\n}"
+  },
+
+  "finddir": {
+    "description": "快速查找目录",
+    "bash": "finddir() {\n    if command -v fd > /dev/null; then\n        fd -t d \"$1\"\n    else\n        find . -name \"*$1*\" -type d 2>/dev/null\n    fi\n}",
+    "powershell": "function finddir($pattern) {\n    Get-ChildItem -Recurse -Name \"*$pattern*\" -Directory -ErrorAction SilentlyContinue\n}",
+    "zsh": "finddir() {\n    if command -v fd > /dev/null; then\n        fd -t d \"$1\"\n    else\n        find . -name \"*$1*\" -type d 2>/dev/null\n    fi\n}"
+  },
+
+  "backup": {
+    "description": "备份文件",
+    "bash": "backup() {\n    cp \"$1\" \"$1.bak.$(date +%Y%m%d_%H%M%S)\"\n}",
+    "powershell": "function backup($file) {\n    if (Test-Path $file) {\n        $backupName = \"$file.bak.$(Get-Date -Format 'yyyyMMdd_HHmmss')\"\n        Copy-Item $file $backupName\n        Write-Host \"已备份到: $backupName\" -ForegroundColor Green\n    } else {\n        Write-Host \"文件不存在: $file\" -ForegroundColor Red\n    }\n}",
+    "zsh": "backup() {\n    cp \"$1\" \"$1.bak.$(date +%Y%m%d_%H%M%S)\"\n}"
+  },
+
+  "gitclean": {
+    "description": "清理已合并的 Git 分支",
+    "bash": "gitclean() {\n    if command -v rg > /dev/null 2>&1; then\n        git branch --merged | rg -v '\\*|main|master|develop' | xargs -n 1 git branch -d\n    else\n        git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -n 1 git branch -d\n    fi\n}",
+    "powershell": "function gitclean {\n    git branch --merged | Where-Object { $_ -notmatch '\\*|main|master|develop' } | ForEach-Object { \n        $branch = $_.Trim()\n        if ($branch) {\n            git branch -d $branch\n        }\n    }\n}",
+    "zsh": "gitclean() {\n    if command -v rg > /dev/null 2>&1; then\n        git branch --merged | rg -v '\\*|main|master|develop' | xargs -n 1 git branch -d\n    else\n        git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -n 1 git branch -d\n    fi\n}"
+  },
+
+  "reload": {
+    "description": "重新加载 shell 配置",
+    "bash": "reload() {\n    source ~/.bash_profile && echo \"Bash 配置已重新加载\"\n}",
+    "powershell": "function reload {\n    . $PROFILE\n    Write-Host \"PowerShell 配置已重新加载\" -ForegroundColor Green\n}",
+    "zsh": "reload() {\n    source ~/.zshrc && echo \"Zsh 配置已重新加载\"\n}"
+  },
+
+  "sysinfo": {
+    "description": "显示系统信息",
+    "bash": "sysinfo() {\n    echo \"=== 系统信息 ===\"\n    uname -a\n    echo \"\"\n    echo \"=== 内存使用 ===\"\n    free -h\n    echo \"\"\n    echo \"=== 磁盘使用 ===\"\n    df -h\n}",
+    "powershell": "function sysinfo {\n    Write-Host \"=== 系统信息 ===\" -ForegroundColor Cyan\n    Get-ComputerInfo | Select-Object WindowsProductName,WindowsVersion,TotalPhysicalMemory\n    Write-Host \"\"\n    Write-Host \"=== 磁盘使用 ===\" -ForegroundColor Cyan\n    Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID,@{Name='Size(GB)';Expression={[math]::Round($_.Size/1GB,2)}},@{Name='FreeSpace(GB)';Expression={[math]::Round($_.FreeSpace/1GB,2)}}\n}",
+    "zsh": "sysinfo() {\n    echo \"=== 系统信息 ===\"\n    uname -a\n    echo \"\"\n    echo \"=== 内存使用 ===\"\n    free -h\n    echo \"\"\n    echo \"=== 磁盘使用 ===\"\n    df -h\n}"
+  }
+}

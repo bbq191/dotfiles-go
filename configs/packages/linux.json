@@ -1,0 +1,72 @@
+{
+  "categories": {
+    "essential": {
+      "description": "Essential development tools (Linux generic)",
+      "priority": 1,
+      "packages": {
+        "git": {
+          "description": "Fast, scalable, distributed revision control system",
+          "tags": ["vcs", "git", "essential"],
+          "managers": {
+            "apt": "git",
+            "yum": "git",
+            "pacman": "git"
+          }
+        },
+        "curl": {
+          "description": "Command line tool and library for transferring data", 
+          "tags": ["network", "essential"],
+          "managers": {
+            "apt": "curl",
+            "yum": "curl",
+            "pacman": "curl"
+          }
+        },
+        "wget": {
+          "description": "Network utility to retrieve files from the Web",
+          "tags": ["network", "essential"],
+          "managers": {
+            "apt": "wget",
+            "yum": "wget", 
+            "pacman": "wget"
+          }
+        }
+      }
+    },
+    "modern_tools": {
+      "description": "Modern replacements for traditional Unix tools",
+      "priority": 2,
+      "packages": {
+        "fzf": {
+          "description": "Command-line fuzzy finder",
+          "tags": ["fuzzy", "finder", "modern"],
+          "managers": {
+            "apt": "fzf",
+            "pacman": "fzf",
+            "snap": "fzf"
+          }
+        }
+      }
+    }
+  },
+  "package_managers": {
+    "apt": {
+      "command": "apt",
+      "install_args": ["install", "-y"],
+      "priority": 1,
+      "parallel": false
+    },
+    "yum": {
+      "command": "yum",
+      "install_args": ["install", "-y"],
+      "priority": 2,
+      "parallel": false
+    },
+    "snap": {
+      "command": "snap",
+      "install_args": ["install"],
+      "priority": 3,
+      "parallel": false
+    }
+  }
+}
