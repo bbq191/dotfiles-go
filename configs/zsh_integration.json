@@ -247,6 +247,7 @@
         "FNM_VERSION_FILE_STRATEGY": "local",
         "FNM_COREPACK_ENABLED": "true"
       },
+      "path_additions": ["$FNM_DIR"],
       "post_install": ["fnm install --lts", "fnm default lts-latest"]
     },
     "pyenv": {

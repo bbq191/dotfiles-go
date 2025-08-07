@@ -68,7 +68,7 @@ export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"        # Docker 配置
 mkdir -p "$DOCKER_CONFIG"
 
 # ✏️ Vim/Neovim 配置
-export VIMINIT='let $MYVIMRC = !has("nvim") ? "$XDG_CONFIG_HOME/vim/vimrc" : "$XDG_CONFIG_HOME/nvim/init.vim" | so $MYVIMRC'
+export VIMINIT='let $MYVIMRC = !has("nvim") ? "$XDG_CONFIG_HOME/vim/vimrc" : "$XDG_CONFIG_HOME/nvim/init.lua" | so $MYVIMRC'
 mkdir -p "$XDG_CONFIG_HOME/vim" "$XDG_CONFIG_HOME/nvim"
 mkdir -p "$XDG_DATA_HOME/vim" "$XDG_DATA_HOME/nvim"
 mkdir -p "$XDG_CACHE_HOME/vim" "$XDG_CACHE_HOME/nvim"
