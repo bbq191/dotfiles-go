@@ -256,7 +256,24 @@ export CUDA_VISIBLE_DEVICES=0                    # 🎮 CUDA设备
 
 # 🗄️ 数据库性能配置
 export MARIADB_HISTFILE="$XDG_STATE_HOME/mariadb/history"  # 📊 MariaDB历史
+export MYSQL_HISTFILE="$XDG_STATE_HOME/mariadb/history"    # 📊 MySQL历史兼容
+export MYSQL_HOST="127.0.0.1"                             # 🏠 MariaDB默认主机
+export MYSQL_TCP_PORT="3306"                              # 🔌 MariaDB默认端口
+export MYSQL_CONFIG="$XDG_CONFIG_HOME/mariadb/my.cnf"      # 📁 MariaDB配置文件
+export MARIADB_CONFIG="$XDG_CONFIG_HOME/mariadb/my.cnf"    # 📁 MariaDB配置文件
+export MARIADB_OPTS="--innodb-buffer-pool-size=30G --max-connections=800 --innodb-thread-concurrency=40 --query-cache-size=512M --innodb-log-file-size=2G --innodb-flush-log-at-trx-commit=2 --thread-pool-size=20 --innodb-read-io-threads=8 --innodb-write-io-threads=8 --innodb-io-capacity=2000"  # 🚀 MariaDB性能优化
+
 export VALKEY_CONF="$XDG_CONFIG_HOME/valkey/valkey.conf"   # ⚡ Valkey配置
+export REDIS_CONF="$XDG_CONFIG_HOME/valkey/valkey.conf"    # ⚡ Redis兼容路径
+export VALKEY_HOST="127.0.0.1"                            # 🏠 Valkey默认主机
+export VALKEY_PORT="6379"                                 # 🔌 Valkey默认端口
+export VALKEY_OPTS="--maxmemory 8gb --maxmemory-policy allkeys-lru --save '900 1' --save '300 10' --save '60 10000' --tcp-backlog 511 --timeout 300 --io-threads 8 --io-threads-do-reads yes"  # 🚀 Valkey性能优化
+
+export PSQLRC="$XDG_CONFIG_HOME/postgresql/psqlrc"         # 🐘 PostgreSQL配置文件
+export PSQL_HISTORY="$XDG_STATE_HOME/postgresql/history"   # 📜 PostgreSQL历史
+export PGHOST="127.0.0.1"                                 # 🏠 PostgreSQL默认主机
+export PGPORT="5432"                                       # 🔌 PostgreSQL默认端口
+export PGOPTIONS="-c shared_preload_libraries=pg_stat_statements -c max_connections=200 -c shared_buffers=12GB -c effective_cache_size=36GB -c work_mem=128MB -c maintenance_work_mem=2GB -c max_worker_processes=20 -c max_parallel_workers=20 -c max_parallel_workers_per_gather=10"  # 🚀 PostgreSQL性能优化
 
 # ⚡ 编译器性能优化
 export MAKEFLAGS="-j20"      # 🔨 Make并行编译
