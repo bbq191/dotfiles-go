@@ -1,0 +1,153 @@
+{
+  "$help": "https://aka.ms/terminal-documentation",
+  "$schema": "https://aka.ms/terminal-profiles-schema-preview",
+  "copyFormatting": "none",
+  "copyOnSelect": false,
+  "defaultProfile": "{835af184-342b-4800-9b16-ec4842846962}",
+  "rendering": {
+    "software": false,
+    "forceFullRepaint": false,
+    "forceVTInput": true
+  },
+  "initialCols": 90,
+  "initialRows": 70,
+  "newTabMenu": [
+    {
+      "type": "remainingProfiles"
+    }
+  ],
+  "profiles": {
+    "defaults": {
+      "font": {
+        "face": "Comic Code Ligatures, LXGW WenKai Mono, Cascadia Code, Consolas",
+        "size": 12,
+        "weight": "normal",
+        "cellWidth": "1.0",
+        "cellHeight": "1.15"
+      },
+      "antialiasingMode": "grayscale",
+
+      "cursorShape": "filledBox",
+      "cursorColor": "#f8f8f2",
+
+      "closeOnExit": "graceful",
+      "snapOnInput": true,
+      "altGrAliasing": true,
+      "bellStyle": "none",
+
+      "historySize": 50000,
+
+      "colorScheme": "TransparentDracula",
+      "useAcrylic": true,
+      "acrylicOpacity": 0.4,
+      "scrollbarState": "visible"
+    },
+    "list": [
+      {
+        "commandline": "D:\\DevTools\\PowerShell\\7-preview\\pwsh.exe",
+        "guid": "{835af184-342b-4800-9b16-ec4842846962}",
+        "hidden": false,
+        "icon": "⚡",
+        "startingDirectory": "D:\\",
+        "name": "PowerShell"
+      },
+      {
+        "guid": "{cbb29b71-b80a-5d62-a350-47fcbd6155e8}",
+        "commandline": "wsl.exe -d DevLinux --cd ~",
+        "icon": "🌸",
+        "hidden": false,
+        "name": "DevLinux",
+        "source": "Microsoft.WSL"
+      }
+    ]
+  },
+  "schemes": [
+    {
+      "name": "TransparentDracula",
+      
+      "background": "#1e1f29",
+      "foreground": "#f8f8f2",
+      "cursorColor": "#f8f8f2",
+      "selectionBackground": "#44475a",
+      
+      "black": "#21222c",
+      "blue": "#6272a4",
+      "cyan": "#8be9fd",
+      "green": "#50fa7b",
+      "purple": "#bd93f9",
+      "red": "#ff5555",
+      "white": "#f8f8f2",
+      "yellow": "#f1fa8c",
+      
+      "brightBlack": "#6272a4",
+      "brightBlue": "#d6acff",
+      "brightCyan": "#a4ffff",
+      "brightGreen": "#69ff94",
+      "brightPurple": "#ff92df",
+      "brightRed": "#ff6e6e",
+      "brightWhite": "#ffffff",
+      "brightYellow": "#ffffa5"
+    }
+  ],
+
+  "actions": [
+    { "command": { "action": "copy", "singleLine": false }, "keys": "ctrl+c" },
+    { "command": "paste", "keys": "ctrl+v" },
+    { "command": "find", "keys": "ctrl+shift+f" },
+    { "command": { "action": "duplicateTab" }, "keys": "alt+shift+d" },
+    { "command": "toggleFullscreen", "keys": "alt+enter" },
+    {
+      "command": { "action": "splitPane", "split": "down" },
+      "keys": "alt+shift+minus"
+    },
+    {
+      "command": { "action": "splitPane", "split": "right" },
+      "keys": "alt+shift+plus"
+    },
+    {
+      "command": { "action": "resizePane", "direction": "down" },
+      "keys": "alt+shift+down"
+    },
+    {
+      "command": { "action": "resizePane", "direction": "up" },
+      "keys": "alt+shift+up"
+    },
+    {
+      "command": { "action": "resizePane", "direction": "left" },
+      "keys": "alt+shift+left"
+    },
+    {
+      "command": { "action": "resizePane", "direction": "right" },
+      "keys": "alt+shift+right"
+    },
+    { "command": { "action": "newTab" }, "keys": "ctrl+shift+t" },
+    { "command": { "action": "closeTab" }, "keys": "ctrl+shift+w" },
+    { "command": { "action": "nextTab" }, "keys": "ctrl+tab" },
+    { "command": { "action": "prevTab" }, "keys": "ctrl+shift+tab" },
+    {
+      "command": { "action": "moveFocus", "direction": "down" },
+      "keys": "alt+k"
+    },
+    {
+      "command": { "action": "moveFocus", "direction": "up" },
+      "keys": "alt+j"
+    },
+    {
+      "command": { "action": "moveFocus", "direction": "left" },
+      "keys": "alt+h"
+    },
+    {
+      "command": { "action": "moveFocus", "direction": "right" },
+      "keys": "alt+l"
+    }
+  ],
+
+  "theme": "system",
+  "showTabsInTitlebar": true,
+  "showTerminalTitleInTitlebar": true,
+  "wordDelimiters": " /\\\\()\\\"'-.,:;<>~!@#$%^&*|+=[]{}~?│",
+
+  "startOnUserLogin": false,
+  "launchMode": "default",
+  "alwaysShowTabs": true
+}
