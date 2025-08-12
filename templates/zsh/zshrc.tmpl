@@ -230,6 +230,15 @@ export GRADLE_OPTS="-Xms4g -Xmx16g -Dorg.gradle.daemon=true -Dorg.gradle.paralle
 # 🟢 Node.js 环境优化
 export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=256"  # 🧠 Node.js内存优化
 export UV_THREADPOOL_SIZE=20  # 🧵 Node.js线程池
+export NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm"
+export NPM_CONFIG_PREFIX="$XDG_DATA_HOME/npm"
+export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm/npmrc"
+
+# .NET XDG 配置
+export DOTNET_CLI_HOME="$XDG_DATA_HOME/dotnet"
+export NUGET_PACKAGES="$XDG_CACHE_HOME/NuGet/packages"
+export NUGET_HTTP_CACHE_PATH="$XDG_CACHE_HOME/NuGet/http-cache"
+export NUGET_PLUGINS_CACHE_PATH="$XDG_CACHE_HOME/NuGet/plugins-cache"
 
 # 🐍 Python AI 开发环境优化
 {{if not .ZshConfig.VersionManagers.pyenv.Enabled}}
