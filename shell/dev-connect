@@ -1,0 +1,23 @@
+#!/bin/bash
+# 数据库连接快捷脚本
+
+case "$1" in
+    pg|postgresql)
+        # 清空会导致问题的环境变量
+        unset PGOPTIONS
+        PGUSER=afu PGDATABASE=postgres PGHOST=/tmp psql
+        ;;
+    mysql|mariadb)
+        mysql --defaults-file="$HOME/.config/mysql/my.cnf" -h localhost -P 3306
+        ;;
+    valkey|redis)
+        valkey-cli -h 127.0.0.1 -p 6379 -a dev2024
+        ;;
+    ollama)
+        curl -s http://127.0.0.1:11434/api/tags | jq '.' 2>/dev/null || echo "Ollama API 连接测试"
+        ;;
+    *)
+        echo "用法: $0 {pg|mysql|valkey|ollama}"
+        echo "快捷连接到对应的开发服务"
+        ;;
+esac

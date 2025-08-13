@@ -1,0 +1,168 @@
+#!/bin/bash
+# 开发服务管理脚本 - 性能优化 + 后台运行
+
+PGDATA="$HOME/.local/share/postgresql"
+MYSQL_DATA="$HOME/.local/share/mysql"
+VALKEY_DATA="$HOME/.local/share/valkey"
+OLLAMA_DATA="$HOME/.local/share/ollama"
+
+# 创建必要目录
+mkdir -p "$PGDATA" "$MYSQL_DATA" "$VALKEY_DATA" "$OLLAMA_DATA"
+mkdir -p "$HOME/.cache/"{postgresql,mysql,valkey,ollama}
+
+start_postgresql() {
+    if ! pgrep -f "postgres.*$PGDATA" > /dev/null; then
+        echo "启动 PostgreSQL..."
+        # 初始化数据库(仅首次)
+        [ ! -f "$PGDATA/PG_VERSION" ] && initdb -D "$PGDATA" >/dev/null 2>&1
+        
+        # 使用默认配置启动，避免配置问题
+        postgres -D "$PGDATA" > "$HOME/.cache/postgresql/postgres.log" 2>&1 &
+        sleep 2
+        echo "✅ PostgreSQL 已启动 (端口 5432)"
+    else
+        echo "PostgreSQL 已在运行"
+    fi
+}
+
+start_mysql() {
+    if ! pgrep -f "mysqld.*$HOME" > /dev/null; then
+        echo "启动 MySQL/MariaDB..."
+        # 初始化数据库(仅首次)
+        [ ! -d "$MYSQL_DATA/mysql" ] && mysql_install_db --user=afu --datadir="$MYSQL_DATA" >/dev/null 2>&1
+        
+        mysqld --defaults-file="$HOME/.config/mysql/my.cnf" \
+               > "$HOME/.cache/mysql/mysql.log" 2>&1 &
+        sleep 3
+        echo "✅ MySQL 已启动 (端口 3306)"
+    else
+        echo "MySQL 已在运行"
+    fi
+}
+
+start_valkey() {
+    if ! pgrep -f "valkey-server" > /dev/null; then
+        echo "启动 Valkey..."
+        valkey-server "$HOME/.config/valkey/valkey.conf" \
+                     > "$HOME/.cache/valkey/valkey.log" 2>&1 &
+        sleep 1
+        echo "✅ Valkey 已启动 (端口 6379)"
+    else
+        echo "Valkey 已在运行"
+    fi
+}
+
+start_ollama() {
+    if ! pgrep -f ollama > /dev/null; then
+        echo "启动 Ollama..."
+        # 加载环境变量
+        set -a; source "$HOME/.config/ollama/config.env"; set +a
+        
+        ollama serve > "$HOME/.cache/ollama/ollama.log" 2>&1 &
+        sleep 2
+        echo "✅ Ollama 已启动 (端口 11434)"
+    else
+        echo "Ollama 已在运行"
+    fi
+}
+
+stop_services() {
+    echo "停止所有开发服务..."
+    
+    # 停止 PostgreSQL
+    if pgrep -f "postgres.*$PGDATA" > /dev/null; then
+        pg_ctl -D "$PGDATA" stop -m fast >/dev/null 2>&1
+        echo "✅ PostgreSQL 已停止"
+    fi
+    
+    # 停止 MySQL
+    if pgrep -f "mysqld.*$HOME" > /dev/null; then
+        mysqladmin --defaults-file="$HOME/.config/mysql/my.cnf" shutdown 2>/dev/null
+        echo "✅ MySQL 已停止"
+    fi
+    
+    # 停止 Valkey
+    if pgrep -f "valkey-server" > /dev/null; then
+        valkey-cli -a dev2024 shutdown 2>/dev/null || pkill -f "valkey-server"
+        echo "✅ Valkey 已停止"
+    fi
+    
+    # 停止 Ollama
+    if pgrep -f ollama > /dev/null; then
+        pkill -f ollama
+        echo "✅ Ollama 已停止"
+    fi
+}
+
+status_services() {
+    echo "📊 开发服务状态:"
+    
+    # PostgreSQL
+    if pgrep -f "postgres.*$PGDATA" > /dev/null; then
+        echo "✅ PostgreSQL: 运行中 (端口 5432)"
+    else
+        echo "❌ PostgreSQL: 已停止"
+    fi
+    
+    # MySQL
+    if pgrep -f "mysqld.*$HOME" > /dev/null; then
+        echo "✅ MySQL: 运行中 (端口 3306)"
+    else
+        echo "❌ MySQL: 已停止"
+    fi
+    
+    # Valkey
+    if pgrep -f "valkey-server" > /dev/null; then
+        echo "✅ Valkey: 运行中 (端口 6379)"
+    else
+        echo "❌ Valkey: 已停止"
+    fi
+    
+    # Ollama
+    if pgrep -f ollama > /dev/null; then
+        echo "✅ Ollama: 运行中 (端口 11434)"
+    else
+        echo "❌ Ollama: 已停止"
+    fi
+}
+
+case "$1" in
+    start)
+        start_postgresql
+        start_mysql
+        start_valkey
+        start_ollama
+        echo "🚀 所有开发服务已启动"
+        ;;
+    stop)
+        stop_services
+        ;;
+    restart)
+        stop_services
+        sleep 2
+        start_postgresql
+        start_mysql
+        start_valkey
+        start_ollama
+        echo "🔄 所有开发服务已重启"
+        ;;
+    status)
+        status_services
+        ;;
+    pg|postgresql)
+        start_postgresql
+        ;;
+    mysql|mariadb)
+        start_mysql
+        ;;
+    valkey|redis)
+        start_valkey
+        ;;
+    ollama)
+        start_ollama
+        ;;
+    *)
+        echo "用法: $0 {start|stop|restart|status|pg|mysql|valkey|ollama}"
+        exit 1
+        ;;
+esac

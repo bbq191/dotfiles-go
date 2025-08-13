@@ -44,15 +44,17 @@ else
     mkdir -p "$XDG_CONFIG_HOME/npm"
 fi
 
-# 🐍 Python 配置
-if [[ -z "$CONDA_DEFAULT_ENV" && -z "$VIRTUAL_ENV" && -z "$PYENV_ROOT" && ! $(command -v poetry) ]]; then
-    export PYTHONSTARTUP="$XDG_CONFIG_HOME/python/pythonrc"
-    mkdir -p "$XDG_CONFIG_HOME/python"
-fi
+# 🐍 Python XDG 配置 (仅在安装时生效)
+if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+    if [[ -z "$CONDA_DEFAULT_ENV" && -z "$VIRTUAL_ENV" && -z "$PYENV_ROOT" && ! $(command -v poetry) ]]; then
+        export PYTHONSTARTUP="$XDG_CONFIG_HOME/python/pythonrc"
+        mkdir -p "$XDG_CONFIG_HOME/python"
+    fi
 
-export PYLINTHOME="$XDG_CACHE_HOME/pylint"       # 🔍 Pylint 缓存
-export JUPYTER_CONFIG_DIR="$XDG_CONFIG_HOME/jupyter"  # 📓 Jupyter 配置
-mkdir -p "$XDG_CACHE_HOME/pylint" "$XDG_CONFIG_HOME/jupyter"
+    export PYLINTHOME="$XDG_CACHE_HOME/pylint"       # 🔍 Pylint 缓存
+    export JUPYTER_CONFIG_DIR="$XDG_CONFIG_HOME/jupyter"  # 📓 Jupyter 配置
+    mkdir -p "$XDG_CACHE_HOME/pylint" "$XDG_CONFIG_HOME/jupyter"
+fi
 
 # 🐹 Go 配置
 if [[ ! $(command -v g) && -z "$GVM_ROOT" && -z "$GOPATH" ]]; then
@@ -63,12 +65,13 @@ fi
 export GOCACHE="$XDG_CACHE_HOME/go-build"  # 🏗️ Go 编译缓存
 mkdir -p "$GOCACHE"
 
-# 🐳 Docker 配置
-export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"        # Docker 配置
-mkdir -p "$DOCKER_CONFIG"
+# 🐳 Docker XDG 配置 (仅在安装时生效)
+if command -v docker >/dev/null 2>&1; then
+    export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"        # Docker 配置
+    mkdir -p "$DOCKER_CONFIG"
+fi
 
-# ✏️ Vim/Neovim 配置
-export VIMINIT='let $MYVIMRC = !has("nvim") ? "$XDG_CONFIG_HOME/vim/vimrc" : "$XDG_CONFIG_HOME/nvim/init.lua" | so $MYVIMRC'
+# 确保XDG目录存在
 mkdir -p "$XDG_CONFIG_HOME/vim" "$XDG_CONFIG_HOME/nvim"
 mkdir -p "$XDG_DATA_HOME/vim" "$XDG_DATA_HOME/nvim"
 mkdir -p "$XDG_CACHE_HOME/vim" "$XDG_CACHE_HOME/nvim"
@@ -234,11 +237,16 @@ export NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm"
 export NPM_CONFIG_PREFIX="$XDG_DATA_HOME/npm"
 export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm/npmrc"
 
-# .NET XDG 配置
-export DOTNET_CLI_HOME="$XDG_DATA_HOME/dotnet"
-export NUGET_PACKAGES="$XDG_CACHE_HOME/NuGet/packages"
-export NUGET_HTTP_CACHE_PATH="$XDG_CACHE_HOME/NuGet/http-cache"
-export NUGET_PLUGINS_CACHE_PATH="$XDG_CACHE_HOME/NuGet/plugins-cache"
+# 🔷 .NET XDG 配置 (仅在安装时生效)
+if command -v dotnet >/dev/null 2>&1; then
+    export DOTNET_CLI_HOME="$XDG_DATA_HOME/dotnet"
+    export DOTNET_CLI_TELEMETRY_OPTOUT=1
+    export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+    export NUGET_PACKAGES="$XDG_CACHE_HOME/NuGet/packages"
+    export NUGET_HTTP_CACHE_PATH="$XDG_CACHE_HOME/NuGet/http-cache"
+    export NUGET_PLUGINS_CACHE_PATH="$XDG_CACHE_HOME/NuGet/plugins-cache"
+    mkdir -p "$DOTNET_CLI_HOME" "$NUGET_PACKAGES" "$NUGET_HTTP_CACHE_PATH" "$NUGET_PLUGINS_CACHE_PATH"
+fi
 
 # 🐍 Python AI 开发环境优化
 {{if not .ZshConfig.VersionManagers.pyenv.Enabled}}
@@ -257,11 +265,18 @@ export CARGO_TARGET_DIR="$XDG_CACHE_HOME/cargo-target"  # 💾 Cargo缓存
 
 # 🤖 AI 开发配置 (Ollama)
 export OLLAMA_HOST="127.0.0.1:11434"             # 🏠 Ollama服务器
-export OLLAMA_MODELS="$XDG_DATA_HOME/ollama/models"  # 🧠 Ollama模型目录
+
+# ⚠️ 重要：系统服务硬编码路径 /var/lib/ollama，XDG配置仅用户级启动时生效
+export OLLAMA_MODELS="$XDG_DATA_HOME/ollama/models"  # 🧠 用户级模型目录
+export OLLAMA_CONFIG_DIR="$XDG_CONFIG_HOME/ollama"   # ⚙️ 用户级配置目录
+export OLLAMA_STATE_DIR="$XDG_STATE_HOME/ollama"     # 📝 用户级状态目录
 export OLLAMA_NUM_PARALLEL=4                     # 🔄 并行请求数
 export OLLAMA_MAX_LOADED_MODELS=3                # 📊 最大加载模型
 export OLLAMA_GPU_MEMORY_FRACTION=0.9            # 🎮 GPU内存分配
 export CUDA_VISIBLE_DEVICES=0                    # 🎮 CUDA设备
+
+# 📁 确保XDG目录存在(用户级模式用)
+mkdir -p "$OLLAMA_MODELS" "$OLLAMA_CONFIG_DIR" "$OLLAMA_STATE_DIR"
 
 # 🗄️ 数据库性能配置
 export MARIADB_HISTFILE="$XDG_STATE_HOME/mariadb/history"  # 📊 MariaDB历史
@@ -664,6 +679,15 @@ ai_status() {
     echo "🤖 Ollama状态:"
     if command -v ollama >/dev/null 2>&1; then
         ollama ps
+        echo ""
+        if systemctl is-active --quiet ollama 2>/dev/null; then
+            echo "  🏢 运行模式: 系统级服务 (路径: /var/lib/ollama)"
+        elif pgrep -f "ollama.*serve" >/dev/null 2>&1; then
+            echo "  👤 运行模式: 用户级进程 (XDG路径: $OLLAMA_MODELS)"
+        else
+            echo "  ⏸️  运行模式: 未启动"
+        fi
+        echo "  🔧 切换模式: 使用 'ollama_mode' 命令"
     else
         echo "  ❌ Ollama未安装"
     fi
@@ -793,6 +817,106 @@ perf_monitor() {
             echo "  ⏸️  $service: 已停止"
         fi
     done
+}
+
+# 🤖 Ollama 模式管理函数
+ollama_mode() {
+    case "$1" in
+        "status")
+            echo "📊 Ollama运行状态:"
+            if systemctl is-active --quiet ollama 2>/dev/null; then
+                echo "  🏢 系统级服务: 运行中 (路径: /var/lib/ollama)"
+            else
+                echo "  🏢 系统级服务: 已停止"
+            fi
+
+            if pgrep -f "ollama.*serve" | grep -v "systemd" >/dev/null 2>&1; then
+                echo "  👤 用户级进程: 运行中 (路径: $OLLAMA_MODELS)"
+            else
+                echo "  👤 用户级进程: 未运行"
+            fi
+            ;;
+
+        "user")
+            echo "🔄 切换到用户级模式..."
+            sudo systemctl stop ollama 2>/dev/null
+            echo "✅ 系统服务已停止"
+
+            echo "🚀 启动用户级Ollama..."
+            nohup ollama serve >/dev/null 2>&1 &
+            sleep 2
+            echo "✅ 用户级Ollama已启动"
+            echo "📁 模型路径: $OLLAMA_MODELS (XDG规范)"
+            echo "📁 配置路径: ~/.ollama (Ollama硬编码限制)"
+            echo ""
+            echo "💡 可选：使用 'ollama_xdg_migrate' 创建符号链接"
+            ;;
+
+        "system")
+            echo "🔄 切换到系统级模式..."
+            pkill -f "ollama.*serve" 2>/dev/null
+            echo "✅ 用户级进程已停止"
+
+            sudo systemctl start ollama
+            echo "✅ 系统级服务已启动"
+            echo "📁 模型路径: /var/lib/ollama"
+            ;;
+
+        *)
+            echo "🤖 Ollama模式管理:"
+            echo "  📊 ollama_mode status  - 查看当前状态"
+            echo "  👤 ollama_mode user    - 切换到用户级(XDG规范)"
+            echo "  🏢 ollama_mode system  - 切换到系统级(稳定)"
+            echo ""
+            echo "💡 说明:"
+            echo "  • 系统级: 稳定，多用户共享，路径 /var/lib/ollama"
+            echo "  • 用户级: 部分XDG规范，路径 $OLLAMA_MODELS + ~/.ollama"
+            ;;
+    esac
+}
+
+# 🔗 Ollama XDG符号链接迁移
+ollama_xdg_migrate() {
+    echo "🔗 Ollama XDG符号链接迁移..."
+    echo ""
+    echo "⚠️  注意：Ollama配置文件硬编码在~/.ollama，无法完全遵循XDG规范"
+    echo "📋 此函数将创建符号链接实现部分XDG化"
+    echo ""
+
+    if [[ -d "$HOME/.ollama" ]]; then
+        echo "📁 发现现有~/.ollama目录，内容："
+        ls -la "$HOME/.ollama/"
+        echo ""
+
+        read -p "🤔 是否将~/.ollama迁移到XDG路径并创建符号链接？[y/N]: " -n 1 -r
+        echo
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            # 停止ollama
+            pkill -f "ollama.*serve" 2>/dev/null
+
+            # 备份并移动
+            local backup_dir="$XDG_DATA_HOME/ollama/config"
+            mkdir -p "$backup_dir"
+
+            echo "📦 移动~/.ollama到$backup_dir..."
+            mv "$HOME/.ollama" "$backup_dir/"
+
+            echo "🔗 创建符号链接..."
+            ln -sf "$backup_dir/.ollama" "$HOME/.ollama"
+
+            echo "✅ 迁移完成！"
+            echo "📁 实际路径: $backup_dir/.ollama"
+            echo "🔗 符号链接: ~/.ollama -> $backup_dir/.ollama"
+        else
+            echo "❌ 迁移已取消"
+        fi
+    else
+        echo "✅ ~/.ollama不存在，XDG路径已就绪"
+        mkdir -p "$XDG_DATA_HOME/ollama/config/.ollama"
+        ln -sf "$XDG_DATA_HOME/ollama/config/.ollama" "$HOME/.ollama"
+        echo "🔗 预创建符号链接: ~/.ollama -> $XDG_DATA_HOME/ollama/config/.ollama"
+    fi
 }
 
 alias perfmon='perf_monitor'
