@@ -1,0 +1,17 @@
+[user]
+	name = aFu
+	email = 377810+bbq191@users.noreply.github.com
+
+[core]
+	excludesfile = /home/afu/.config/git/ignore
+	pager = delta
+	# pager = delta
+[delta]
+	light = false
+	line-numbers = true
+	navigate = true
+	side-by-side = true
+[diff]
+	colorMoved = default
+[merge]
+	conflictstyle = diff3
