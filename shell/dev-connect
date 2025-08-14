@@ -1,23 +1,189 @@
 #!/bin/bash
 # 数据库连接快捷脚本
 
+# 工具函数
+log_info() {
+    echo "$(date '+%H:%M:%S') [INFO] $1"
+}
+
+log_error() {
+    echo "$(date '+%H:%M:%S') [ERROR] $1" >&2
+}
+
+# 服务可用性检查
+check_service_available() {
+    local service=$1
+    local port=$2
+    local host=${3:-127.0.0.1}
+    
+    if ! nc -z "$host" "$port" 2>/dev/null; then
+        log_error "$service 服务不可用 (端口 $port)"
+        log_info "请先运行: dev-services $service"
+        return 1
+    fi
+    return 0
+}
+
+# 配置文件检查
+check_config() {
+    local config_file=$1
+    local service=$2
+    
+    if [[ ! -f "$config_file" ]]; then
+        log_error "$service 配置文件不存在: $config_file"
+        return 1
+    fi
+    return 0
+}
+
+connect_postgresql() {
+    log_info "连接到 PostgreSQL..."
+    
+    # 检查服务可用性
+    if ! check_service_available "PostgreSQL" 5432; then
+        return 1
+    fi
+    
+    # 清空会导致问题的环境变量
+    unset PGOPTIONS
+    
+    # 连接测试
+    if ! pg_isready -h /tmp -p 5432 >/dev/null 2>&1; then
+        log_error "PostgreSQL 服务未就绪"
+        return 1
+    fi
+    
+    log_info "已连接到 PostgreSQL"
+    PGUSER=afu PGDATABASE=postgres PGHOST=/tmp psql
+}
+
+connect_mysql() {
+    log_info "连接到 MySQL..."
+    
+    # 检查配置文件
+    if ! check_config "$HOME/.config/mysql/my.cnf" "MySQL"; then
+        return 1
+    fi
+    
+    # 检查服务可用性
+    if ! check_service_available "MySQL" 3306; then
+        return 1
+    fi
+    
+    # 连接测试
+    if ! mysqladmin --defaults-file="$HOME/.config/mysql/my.cnf" ping >/dev/null 2>&1; then
+        log_error "MySQL 服务未就绪"
+        return 1
+    fi
+    
+    log_info "已连接到 MySQL"
+    mysql --defaults-file="$HOME/.config/mysql/my.cnf" -h localhost -P 3306
+}
+
+connect_valkey() {
+    log_info "连接到 Valkey..."
+    
+    # 检查服务可用性
+    if ! check_service_available "Valkey" 6379; then
+        return 1
+    fi
+    
+    # 连接测试
+    if ! valkey-cli -p 6379 -a dev2024 ping >/dev/null 2>&1; then
+        log_error "Valkey 服务未就绪或密码错误"
+        return 1
+    fi
+    
+    log_info "已连接到 Valkey"
+    valkey-cli -h 127.0.0.1 -p 6379 -a dev2024
+}
+
+connect_ollama() {
+    log_info "连接到 Ollama..."
+    
+    # 检查服务可用性
+    if ! check_service_available "Ollama" 11434; then
+        return 1
+    fi
+    
+    # API 测试
+    log_info "测试 Ollama API..."
+    if response=$(curl -s --connect-timeout 5 http://127.0.0.1:11434/api/tags 2>/dev/null); then
+        if command -v jq >/dev/null 2>&1; then
+            echo "$response" | jq '.'
+        else
+            echo "$response"
+        fi
+        log_info "Ollama API 连接成功"
+    else
+        log_error "Ollama API 连接失败"
+        return 1
+    fi
+}
+
+# 测试模式
+test_connections() {
+    log_info "测试所有服务连接..."
+    echo ""
+    
+    echo "📋 连接测试结果:"
+    
+    # PostgreSQL
+    if check_service_available "PostgreSQL" 5432 >/dev/null 2>&1 && \
+       pg_isready -h /tmp -p 5432 >/dev/null 2>&1; then
+        echo "✅ PostgreSQL: 可连接"
+    else
+        echo "❌ PostgreSQL: 不可连接"
+    fi
+    
+    # MySQL
+    if check_service_available "MySQL" 3306 >/dev/null 2>&1 && \
+       [[ -f "$HOME/.config/mysql/my.cnf" ]] && \
+       mysqladmin --defaults-file="$HOME/.config/mysql/my.cnf" ping >/dev/null 2>&1; then
+        echo "✅ MySQL: 可连接"
+    else
+        echo "❌ MySQL: 不可连接"
+    fi
+    
+    # Valkey
+    if check_service_available "Valkey" 6379 >/dev/null 2>&1 && \
+       valkey-cli -p 6379 -a dev2024 ping >/dev/null 2>&1; then
+        echo "✅ Valkey: 可连接"
+    else
+        echo "❌ Valkey: 不可连接"
+    fi
+    
+    # Ollama
+    if check_service_available "Ollama" 11434 >/dev/null 2>&1 && \
+       curl -s --connect-timeout 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+        echo "✅ Ollama: 可连接"
+    else
+        echo "❌ Ollama: 不可连接"
+    fi
+}
+
 case "$1" in
     pg|postgresql)
-        # 清空会导致问题的环境变量
-        unset PGOPTIONS
-        PGUSER=afu PGDATABASE=postgres PGHOST=/tmp psql
+        connect_postgresql
         ;;
     mysql|mariadb)
-        mysql --defaults-file="$HOME/.config/mysql/my.cnf" -h localhost -P 3306
+        connect_mysql
         ;;
     valkey|redis)
-        valkey-cli -h 127.0.0.1 -p 6379 -a dev2024
+        connect_valkey
         ;;
     ollama)
-        curl -s http://127.0.0.1:11434/api/tags | jq '.' 2>/dev/null || echo "Ollama API 连接测试"
+        connect_ollama
+        ;;
+    test)
+        test_connections
         ;;
     *)
-        echo "用法: $0 {pg|mysql|valkey|ollama}"
+        echo "用法: $0 {pg|mysql|valkey|ollama|test}"
+        echo ""
+        echo "连接服务: pg, mysql, valkey, ollama"
+        echo "测试连接: test"
+        echo ""
         echo "快捷连接到对应的开发服务"
         ;;
 esac

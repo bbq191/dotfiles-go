@@ -5,121 +5,423 @@ PGDATA="$HOME/.local/share/postgresql"
 MYSQL_DATA="$HOME/.local/share/mysql"
 VALKEY_DATA="$HOME/.local/share/valkey"
 OLLAMA_DATA="$HOME/.local/share/ollama"
+PID_DIR="$HOME/.local/share/pids"
 
 # 创建必要目录
-mkdir -p "$PGDATA" "$MYSQL_DATA" "$VALKEY_DATA" "$OLLAMA_DATA"
+mkdir -p "$PGDATA" "$MYSQL_DATA" "$VALKEY_DATA" "$OLLAMA_DATA" "$PID_DIR"
 mkdir -p "$HOME/.cache/"{postgresql,mysql,valkey,ollama}
 
+# 工具函数
+log_info() {
+    echo "$(date '+%H:%M:%S') [INFO] $1"
+}
+
+log_error() {
+    echo "$(date '+%H:%M:%S') [ERROR] $1" >&2
+}
+
+# 健康检查函数
+wait_for_postgresql() {
+    log_info "等待 PostgreSQL 就绪..."
+    for i in {1..15}; do
+        if pg_isready -h /tmp -p 5432 >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+wait_for_mysql() {
+    log_info "等待 MySQL 就绪..."
+    for i in {1..20}; do
+        if mysqladmin --defaults-file="$HOME/.config/mysql/my.cnf" ping >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+wait_for_valkey() {
+    log_info "等待 Valkey 就绪..."
+    for i in {1..10}; do
+        if valkey-cli -p 6379 -a dev2024 ping >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+wait_for_ollama() {
+    log_info "等待 Ollama 就绪..."
+    for i in {1..15}; do
+        if curl -s http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+# 配置验证函数
+validate_configs() {
+    local errors=0
+    
+    # 检查 MySQL 配置
+    if [[ ! -f "$HOME/.config/mysql/my.cnf" ]]; then
+        log_error "MySQL 配置文件不存在: $HOME/.config/mysql/my.cnf"
+        errors=$((errors + 1))
+    fi
+    
+    # 检查 Valkey 配置
+    if [[ ! -f "$HOME/.config/valkey/valkey.conf" ]]; then
+        log_error "Valkey 配置文件不存在: $HOME/.config/valkey/valkey.conf"
+        errors=$((errors + 1))
+    fi
+    
+    # 检查 Ollama 配置
+    if [[ ! -f "$HOME/.config/ollama/config.env" ]]; then
+        log_error "Ollama 配置文件不存在: $HOME/.config/ollama/config.env"
+        errors=$((errors + 1))
+    fi
+    
+    return $errors
+}
+
+# 端口检查函数
+check_port() {
+    local port=$1
+    local service=$2
+    
+    if ss -tlnp | grep ":$port " >/dev/null 2>&1; then
+        log_error "$service 端口 $port 已被占用"
+        return 1
+    fi
+    return 0
+}
+
+# 进程检测优化函数
+is_postgres_running() {
+    [[ -f "$PID_DIR/postgresql.pid" ]] && kill -0 "$(cat "$PID_DIR/postgresql.pid")" 2>/dev/null
+}
+
+is_mysql_running() {
+    [[ -f "$PID_DIR/mysql.pid" ]] && kill -0 "$(cat "$PID_DIR/mysql.pid")" 2>/dev/null
+}
+
+is_valkey_running() {
+    [[ -f "$PID_DIR/valkey.pid" ]] && kill -0 "$(cat "$PID_DIR/valkey.pid")" 2>/dev/null
+}
+
+is_ollama_running() {
+    [[ -f "$PID_DIR/ollama.pid" ]] && kill -0 "$(cat "$PID_DIR/ollama.pid")" 2>/dev/null
+}
+
 start_postgresql() {
-    if ! pgrep -f "postgres.*$PGDATA" > /dev/null; then
-        echo "启动 PostgreSQL..."
-        # 初始化数据库(仅首次)
-        [ ! -f "$PGDATA/PG_VERSION" ] && initdb -D "$PGDATA" >/dev/null 2>&1
-        
-        # 使用默认配置启动，避免配置问题
-        postgres -D "$PGDATA" > "$HOME/.cache/postgresql/postgres.log" 2>&1 &
-        sleep 2
-        echo "✅ PostgreSQL 已启动 (端口 5432)"
+    if is_postgres_running; then
+        log_info "PostgreSQL 已在运行"
+        return 0
+    fi
+    
+    # 检查端口
+    if ! check_port 5432 "PostgreSQL"; then
+        return 1
+    fi
+    
+    log_info "启动 PostgreSQL..."
+    
+    # 初始化数据库(仅首次)
+    if [[ ! -f "$PGDATA/PG_VERSION" ]]; then
+        log_info "初始化 PostgreSQL 数据库..."
+        if ! initdb -D "$PGDATA" >/dev/null 2>&1; then
+            log_error "PostgreSQL 数据库初始化失败"
+            return 1
+        fi
+    fi
+    
+    # 启动服务
+    postgres -D "$PGDATA" > "$HOME/.cache/postgresql/postgres.log" 2>&1 &
+    local pid=$!
+    echo $pid > "$PID_DIR/postgresql.pid"
+    
+    # 健康检查
+    if wait_for_postgresql; then
+        log_info "✅ PostgreSQL 已启动 (端口 5432)"
+        return 0
     else
-        echo "PostgreSQL 已在运行"
+        log_error "PostgreSQL 启动失败或超时"
+        rm -f "$PID_DIR/postgresql.pid"
+        return 1
     fi
 }
 
 start_mysql() {
-    if ! pgrep -f "mysqld.*$HOME" > /dev/null; then
-        echo "启动 MySQL/MariaDB..."
-        # 初始化数据库(仅首次)
-        [ ! -d "$MYSQL_DATA/mysql" ] && mysql_install_db --user=afu --datadir="$MYSQL_DATA" >/dev/null 2>&1
-        
-        mysqld --defaults-file="$HOME/.config/mysql/my.cnf" \
-               > "$HOME/.cache/mysql/mysql.log" 2>&1 &
-        sleep 3
-        echo "✅ MySQL 已启动 (端口 3306)"
+    if is_mysql_running; then
+        log_info "MySQL 已在运行"
+        return 0
+    fi
+    
+    # 验证配置
+    if [[ ! -f "$HOME/.config/mysql/my.cnf" ]]; then
+        log_error "MySQL 配置文件不存在: $HOME/.config/mysql/my.cnf"
+        return 1
+    fi
+    
+    # 检查端口
+    if ! check_port 3306 "MySQL"; then
+        return 1
+    fi
+    
+    log_info "启动 MySQL/MariaDB..."
+    
+    # 初始化数据库(仅首次)
+    if [[ ! -d "$MYSQL_DATA/mysql" ]]; then
+        log_info "初始化 MySQL 数据库..."
+        if ! mysql_install_db --user=afu --datadir="$MYSQL_DATA" >/dev/null 2>&1; then
+            log_error "MySQL 数据库初始化失败"
+            return 1
+        fi
+    fi
+    
+    # 启动服务
+    mysqld --defaults-file="$HOME/.config/mysql/my.cnf" \
+           > "$HOME/.cache/mysql/mysql.log" 2>&1 &
+    local pid=$!
+    echo $pid > "$PID_DIR/mysql.pid"
+    
+    # 健康检查
+    if wait_for_mysql; then
+        log_info "✅ MySQL 已启动 (端口 3306)"
+        return 0
     else
-        echo "MySQL 已在运行"
+        log_error "MySQL 启动失败或超时"
+        rm -f "$PID_DIR/mysql.pid"
+        return 1
     fi
 }
 
 start_valkey() {
-    if ! pgrep -f "valkey-server" > /dev/null; then
-        echo "启动 Valkey..."
-        valkey-server "$HOME/.config/valkey/valkey.conf" \
-                     > "$HOME/.cache/valkey/valkey.log" 2>&1 &
-        sleep 1
-        echo "✅ Valkey 已启动 (端口 6379)"
+    if is_valkey_running; then
+        log_info "Valkey 已在运行"
+        return 0
+    fi
+    
+    # 验证配置
+    if [[ ! -f "$HOME/.config/valkey/valkey.conf" ]]; then
+        log_error "Valkey 配置文件不存在: $HOME/.config/valkey/valkey.conf"
+        return 1
+    fi
+    
+    # 检查端口
+    if ! check_port 6379 "Valkey"; then
+        return 1
+    fi
+    
+    log_info "启动 Valkey..."
+    
+    # 启动服务
+    valkey-server "$HOME/.config/valkey/valkey.conf" \
+                 > "$HOME/.cache/valkey/valkey.log" 2>&1 &
+    local pid=$!
+    echo $pid > "$PID_DIR/valkey.pid"
+    
+    # 健康检查
+    if wait_for_valkey; then
+        log_info "✅ Valkey 已启动 (端口 6379)"
+        return 0
     else
-        echo "Valkey 已在运行"
+        log_error "Valkey 启动失败或超时"
+        rm -f "$PID_DIR/valkey.pid"
+        return 1
     fi
 }
 
 start_ollama() {
-    if ! pgrep -f ollama > /dev/null; then
-        echo "启动 Ollama..."
-        # 加载环境变量
-        set -a; source "$HOME/.config/ollama/config.env"; set +a
-        
-        ollama serve > "$HOME/.cache/ollama/ollama.log" 2>&1 &
-        sleep 2
-        echo "✅ Ollama 已启动 (端口 11434)"
+    if is_ollama_running; then
+        log_info "Ollama 已在运行"
+        return 0
+    fi
+    
+    # 验证配置
+    if [[ ! -f "$HOME/.config/ollama/config.env" ]]; then
+        log_error "Ollama 配置文件不存在: $HOME/.config/ollama/config.env"
+        return 1
+    fi
+    
+    # 检查端口
+    if ! check_port 11434 "Ollama"; then
+        return 1
+    fi
+    
+    log_info "启动 Ollama..."
+    
+    # 加载环境变量
+    set -a; source "$HOME/.config/ollama/config.env"; set +a
+    
+    # 启动服务
+    ollama serve > "$HOME/.cache/ollama/ollama.log" 2>&1 &
+    local pid=$!
+    echo $pid > "$PID_DIR/ollama.pid"
+    
+    # 健康检查
+    if wait_for_ollama; then
+        log_info "✅ Ollama 已启动 (端口 11434)"
+        return 0
     else
-        echo "Ollama 已在运行"
+        log_error "Ollama 启动失败或超时"
+        rm -f "$PID_DIR/ollama.pid"
+        return 1
+    fi
+}
+
+stop_postgresql_only() {
+    if ! is_postgres_running; then
+        log_info "PostgreSQL 未在运行"
+        return 0
+    fi
+    
+    log_info "停止 PostgreSQL..."
+    
+    if pg_ctl -D "$PGDATA" stop -m fast >/dev/null 2>&1; then
+        rm -f "$PID_DIR/postgresql.pid"
+        log_info "✅ PostgreSQL 已停止"
+        return 0
+    else
+        log_error "PostgreSQL 停止失败"
+        return 1
+    fi
+}
+
+stop_mysql_only() {
+    if ! is_mysql_running; then
+        log_info "MySQL 未在运行"
+        return 0
+    fi
+    
+    log_info "停止 MySQL..."
+    
+    if mysqladmin --defaults-file="$HOME/.config/mysql/my.cnf" shutdown 2>/dev/null; then
+        rm -f "$PID_DIR/mysql.pid"
+        log_info "✅ MySQL 已停止"
+        return 0
+    else
+        log_error "MySQL 停止失败"
+        return 1
+    fi
+}
+
+stop_valkey_only() {
+    if ! is_valkey_running; then
+        log_info "Valkey 未在运行"
+        return 0
+    fi
+    
+    log_info "停止 Valkey..."
+    
+    if valkey-cli -a dev2024 shutdown 2>/dev/null || pkill -f "valkey-server" 2>/dev/null; then
+        rm -f "$PID_DIR/valkey.pid"
+        log_info "✅ Valkey 已停止"
+        return 0
+    else
+        log_error "Valkey 停止失败"
+        return 1
+    fi
+}
+
+stop_ollama_only() {
+    if ! is_ollama_running; then
+        log_info "Ollama 未在运行"
+        return 0
+    fi
+    
+    log_info "停止 Ollama..."
+    
+    # 尝试优雅停止，如果失败则使用 sudo
+    if pkill -f ollama 2>/dev/null || sudo pkill -f ollama 2>/dev/null; then
+        rm -f "$PID_DIR/ollama.pid"
+        log_info "✅ Ollama 已停止"
+        return 0
+    else
+        log_error "Ollama 停止失败（权限不足）"
+        return 1
     fi
 }
 
 stop_services() {
-    echo "停止所有开发服务..."
+    log_info "停止所有开发服务..."
+    local failed=0
     
-    # 停止 PostgreSQL
-    if pgrep -f "postgres.*$PGDATA" > /dev/null; then
-        pg_ctl -D "$PGDATA" stop -m fast >/dev/null 2>&1
-        echo "✅ PostgreSQL 已停止"
-    fi
+    # 停止所有服务
+    stop_postgresql_only || failed=$((failed + 1))
+    stop_mysql_only || failed=$((failed + 1))
+    stop_valkey_only || failed=$((failed + 1))
+    stop_ollama_only || failed=$((failed + 1))
     
-    # 停止 MySQL
-    if pgrep -f "mysqld.*$HOME" > /dev/null; then
-        mysqladmin --defaults-file="$HOME/.config/mysql/my.cnf" shutdown 2>/dev/null
-        echo "✅ MySQL 已停止"
+    if [[ $failed -eq 0 ]]; then
+        log_info "✅ 所有服务已停止"
+    else
+        log_error "$failed 个服务停止失败"
+        return 1
     fi
-    
-    # 停止 Valkey
-    if pgrep -f "valkey-server" > /dev/null; then
-        valkey-cli -a dev2024 shutdown 2>/dev/null || pkill -f "valkey-server"
-        echo "✅ Valkey 已停止"
-    fi
-    
-    # 停止 Ollama
-    if pgrep -f ollama > /dev/null; then
-        pkill -f ollama
-        echo "✅ Ollama 已停止"
-    fi
+}
+
+# 单个服务重启函数
+restart_postgresql() {
+    log_info "重启 PostgreSQL..."
+    stop_postgresql_only
+    sleep 2
+    start_postgresql
+}
+
+restart_mysql() {
+    log_info "重启 MySQL..."
+    stop_mysql_only
+    sleep 2
+    start_mysql
+}
+
+restart_valkey() {
+    log_info "重启 Valkey..."
+    stop_valkey_only
+    sleep 1
+    start_valkey
+}
+
+restart_ollama() {
+    log_info "重启 Ollama..."
+    stop_ollama_only
+    sleep 2
+    start_ollama
 }
 
 status_services() {
     echo "📊 开发服务状态:"
     
     # PostgreSQL
-    if pgrep -f "postgres.*$PGDATA" > /dev/null; then
+    if is_postgres_running; then
         echo "✅ PostgreSQL: 运行中 (端口 5432)"
     else
         echo "❌ PostgreSQL: 已停止"
     fi
     
     # MySQL
-    if pgrep -f "mysqld.*$HOME" > /dev/null; then
+    if is_mysql_running; then
         echo "✅ MySQL: 运行中 (端口 3306)"
     else
         echo "❌ MySQL: 已停止"
     fi
     
     # Valkey
-    if pgrep -f "valkey-server" > /dev/null; then
+    if is_valkey_running; then
         echo "✅ Valkey: 运行中 (端口 6379)"
     else
         echo "❌ Valkey: 已停止"
     fi
     
     # Ollama
-    if pgrep -f ollama > /dev/null; then
+    if is_ollama_running; then
         echo "✅ Ollama: 运行中 (端口 11434)"
     else
         echo "❌ Ollama: 已停止"
@@ -161,8 +463,37 @@ case "$1" in
     ollama)
         start_ollama
         ;;
+    stop-pg|stop-postgresql)
+        stop_postgresql_only
+        ;;
+    stop-mysql|stop-mariadb)
+        stop_mysql_only
+        ;;
+    stop-valkey|stop-redis)
+        stop_valkey_only
+        ;;
+    stop-ollama)
+        stop_ollama_only
+        ;;
+    restart-pg|restart-postgresql)
+        restart_postgresql
+        ;;
+    restart-mysql|restart-mariadb)
+        restart_mysql
+        ;;
+    restart-valkey|restart-redis)
+        restart_valkey
+        ;;
+    restart-ollama)
+        restart_ollama
+        ;;
     *)
-        echo "用法: $0 {start|stop|restart|status|pg|mysql|valkey|ollama}"
+        echo "用法: $0 {start|stop|restart|status|pg|mysql|valkey|ollama|stop-*|restart-*}"
+        echo ""
+        echo "启动服务: start, pg, mysql, valkey, ollama"
+        echo "停止服务: stop, stop-pg, stop-mysql, stop-valkey, stop-ollama"
+        echo "重启服务: restart, restart-pg, restart-mysql, restart-valkey, restart-ollama"
+        echo "查看状态: status"
         exit 1
         ;;
 esac
