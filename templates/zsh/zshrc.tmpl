@@ -297,7 +297,7 @@ export PSQLRC="$XDG_CONFIG_HOME/postgresql/psqlrc"         # 🐘 PostgreSQL配�
 export PSQL_HISTORY="$XDG_STATE_HOME/postgresql/history"   # 📜 PostgreSQL历史
 export PGHOST="127.0.0.1"                                 # 🏠 PostgreSQL默认主机
 export PGPORT="5432"                                       # 🔌 PostgreSQL默认端口
-export PGOPTIONS="-c shared_preload_libraries=pg_stat_statements -c max_connections=200 -c shared_buffers=12GB -c effective_cache_size=36GB -c work_mem=128MB -c maintenance_work_mem=2GB -c max_worker_processes=20 -c max_parallel_workers=20 -c max_parallel_workers_per_gather=10"  # 🚀 PostgreSQL性能优化
+export PGOPTIONS="-c max_connections=200 -c shared_buffers=12GB -c effective_cache_size=36GB -c work_mem=128MB -c maintenance_work_mem=2GB -c max_worker_processes=20 -c max_parallel_workers=20 -c max_parallel_workers_per_gather=10"  # 🚀 PostgreSQL性能优化
 
 # ⚡ 编译器性能优化
 export MAKEFLAGS="-j20"      # 🔨 Make并行编译
